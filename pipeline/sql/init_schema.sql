@@ -16,7 +16,8 @@ CREATE TABLE IF NOT EXISTS gauge_readings (
     fetched_at TIMESTAMP WITH TIME ZONE NOT NULL,
     flow_cfs DOUBLE PRECISION,
     water_temp_f DOUBLE PRECISION,
-    gauge_height_ft DOUBLE PRECISION
+    gauge_height_ft DOUBLE PRECISION,
+    UNIQUE(gauge_id, fetched_at)
 );
 
 CREATE INDEX IF NOT EXISTS idx_gauge_readings_gauge_fetched

@@ -1,3 +1,5 @@
+BEGIN;
+
 -- Drop tables that need schema changes (cascades to FK dependents)
 DROP TABLE IF EXISTS predictions;
 DROP TABLE IF EXISTS weather_readings;
@@ -40,3 +42,5 @@ ALTER TABLE gauge_readings
     DROP CONSTRAINT IF EXISTS gauge_readings_gauge_id_fetched_at_key;
 ALTER TABLE gauge_readings
     ADD CONSTRAINT gauge_readings_gauge_id_fetched_at_key UNIQUE (gauge_id, fetched_at);
+
+COMMIT;
