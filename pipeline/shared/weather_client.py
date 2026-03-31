@@ -6,6 +6,7 @@ fetch_weather_historical: hourly historical data from Open-Meteo archive API.
 
 from dataclasses import dataclass
 from datetime import datetime
+from datetime import date as date_type
 from typing import List, Optional
 from zoneinfo import ZoneInfo
 import requests
@@ -78,3 +79,34 @@ def fetch_weather_forecast(lat: float, lon: float) -> List[WeatherHour]:
         return _parse_hourly(resp.json(), has_precip_prob=True)
     except KeyError as e:
         raise RuntimeError(f"Open-Meteo forecast response missing key: {e}")
+
+
+def fetch_weather_historical(
+    lat: float,
+    lon: float,
+    start_date: date_type,
+    end_date: date_type,
+) -> List[WeatherHour]:
+    """Fetch hourly historical data. precip_probability is None for all rows."""
+    params = {
+        "latitude": lat,
+        "longitude": lon,
+        "hourly": HISTORICAL_VARS,
+        "start_date": start_date.isoformat(),
+        "end_date": end_date.isoformat(),
+        "temperature_unit": "fahrenheit",
+        "wind_speed_unit": "mph",
+        "precipitation_unit": "mm",
+        "timezone": "America/Denver",
+    }
+    resp = requests.get(ARCHIVE_URL, params=params, timeout=60)
+    if not resp.ok:
+        raise RuntimeError(f"Open-Meteo archive API returned {resp.status_code}")
+    try:
+        hours = _parse_hourly(resp.json(), has_precip_prob=False)
+        # All historical rows are observed, not forecast
+        for h in hours:
+            h.is_forecast = False
+        return hours
+    except KeyError as e:
+        raise RuntimeError(f"Open-Meteo archive response missing key: {e}")
