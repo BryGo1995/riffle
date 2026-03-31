@@ -1,0 +1,8 @@
+flowchart TD
+    USGSApi["USGS Water Services API"] -->|stream flow and temp| Airflow["Airflow DAGs"]
+    OpenMeteo["Open-Meteo API"] -->|weather and forecast| Airflow
+    Airflow -->|gauge and weather readings| Postgres[("PostgreSQL")]
+    Airflow -->|log and promote model| MLflow[("MLflow Registry")]
+    MLflow -->|production model| Airflow
+    Postgres -->|readings and predictions| FastAPI["FastAPI"]
+    FastAPI -->|REST JSON| NextJS["Next.js on Vercel"]

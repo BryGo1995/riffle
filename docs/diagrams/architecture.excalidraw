@@ -1,0 +1,894 @@
+{
+  "type": "excalidraw",
+  "version": 2,
+  "source": "https://excalidraw.com",
+  "elements": [
+    {
+      "id": "USGSApi",
+      "type": "rectangle",
+      "groupIds": [],
+      "x": 49.4296875,
+      "y": 8,
+      "width": 260,
+      "height": 90,
+      "strokeWidth": 2,
+      "link": null,
+      "boundElements": [
+        {
+          "id": "lbl_USGSApi",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "id": "lbl_USGSApi",
+      "type": "text",
+      "x": 49.4296875,
+      "y": 40.5,
+      "width": 260,
+      "height": 25,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "roundness": null,
+      "seed": 199982,
+      "version": 1,
+      "versionNonce": 299973,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 1774927214600,
+      "link": null,
+      "locked": false,
+      "text": "USGS Water Services API",
+      "fontSize": 20,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "containerId": "USGSApi",
+      "originalText": "USGS Water Services API",
+      "rawText": "USGS Water Services API",
+      "lineHeight": 1.25
+    },
+    {
+      "id": "Airflow",
+      "type": "rectangle",
+      "groupIds": [],
+      "x": 243.5859375,
+      "y": 178,
+      "width": 178.90625,
+      "height": 60,
+      "strokeWidth": 2,
+      "link": null,
+      "boundElements": [
+        {
+          "id": "lbl_Airflow",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "id": "lbl_Airflow",
+      "type": "text",
+      "x": 243.5859375,
+      "y": 195.5,
+      "width": 178.90625,
+      "height": 25,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "roundness": null,
+      "seed": 399964,
+      "version": 1,
+      "versionNonce": 499955,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 1774927214600,
+      "link": null,
+      "locked": false,
+      "text": "Airflow DAGs",
+      "fontSize": 20,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "containerId": "Airflow",
+      "originalText": "Airflow DAGs",
+      "rawText": "Airflow DAGs",
+      "lineHeight": 1.25
+    },
+    {
+      "id": "OpenMeteo",
+      "type": "rectangle",
+      "groupIds": [],
+      "x": 359.4296875,
+      "y": 23,
+      "width": 207.875,
+      "height": 60,
+      "strokeWidth": 2,
+      "link": null,
+      "boundElements": [
+        {
+          "id": "lbl_OpenMeteo",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "id": "lbl_OpenMeteo",
+      "type": "text",
+      "x": 359.4296875,
+      "y": 40.5,
+      "width": 207.875,
+      "height": 25,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "roundness": null,
+      "seed": 599946,
+      "version": 1,
+      "versionNonce": 699937,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 1774927214600,
+      "link": null,
+      "locked": false,
+      "text": "Open-Meteo API",
+      "fontSize": 20,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "containerId": "OpenMeteo",
+      "originalText": "Open-Meteo API",
+      "rawText": "Open-Meteo API",
+      "lineHeight": 1.25
+    },
+    {
+      "id": "Postgres",
+      "type": "rectangle",
+      "groupIds": [],
+      "x": 51.0625,
+      "y": 350.2221448945362,
+      "width": 123.953125,
+      "height": 82.3423080444336,
+      "strokeWidth": 2,
+      "link": null,
+      "boundElements": [
+        {
+          "id": "lbl_Postgres",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "id": "lbl_Postgres",
+      "type": "text",
+      "x": 51.0625,
+      "y": 380.143298916753,
+      "width": 123.953125,
+      "height": 22.5,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "roundness": null,
+      "seed": 799928,
+      "version": 1,
+      "versionNonce": 899919,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 1774927214600,
+      "link": null,
+      "locked": false,
+      "text": "PostgreSQL",
+      "fontSize": 18,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "containerId": "Postgres",
+      "originalText": "PostgreSQL",
+      "rawText": "PostgreSQL",
+      "lineHeight": 1.25
+    },
+    {
+      "id": "MLflow",
+      "type": "rectangle",
+      "groupIds": [],
+      "x": 352.765625,
+      "y": 347.99999713765726,
+      "width": 157.265625,
+      "height": 86.7865982055664,
+      "strokeWidth": 2,
+      "link": null,
+      "boundElements": [
+        {
+          "id": "lbl_MLflow",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "id": "lbl_MLflow",
+      "type": "text",
+      "x": 352.765625,
+      "y": 382.01829624044046,
+      "width": 157.265625,
+      "height": 18.75,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "roundness": null,
+      "seed": 999910,
+      "version": 1,
+      "versionNonce": 1099901,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 1774927214600,
+      "link": null,
+      "locked": false,
+      "text": "MLflow Registry",
+      "fontSize": 15,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "containerId": "MLflow",
+      "originalText": "MLflow Registry",
+      "rawText": "MLflow Registry",
+      "lineHeight": 1.25
+    },
+    {
+      "id": "FastAPI",
+      "type": "rectangle",
+      "groupIds": [],
+      "x": 47.46875,
+      "y": 544.7865982055664,
+      "width": 131.140625,
+      "height": 60,
+      "strokeWidth": 2,
+      "link": null,
+      "boundElements": [
+        {
+          "id": "lbl_FastAPI",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "id": "lbl_FastAPI",
+      "type": "text",
+      "x": 47.46875,
+      "y": 562.2865982055664,
+      "width": 131.140625,
+      "height": 25,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "roundness": null,
+      "seed": 1199892,
+      "version": 1,
+      "versionNonce": 1299883,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 1774927214600,
+      "link": null,
+      "locked": false,
+      "text": "FastAPI",
+      "fontSize": 20,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "containerId": "FastAPI",
+      "originalText": "FastAPI",
+      "rawText": "FastAPI",
+      "lineHeight": 1.25
+    },
+    {
+      "id": "NextJS",
+      "type": "rectangle",
+      "groupIds": [],
+      "x": 8,
+      "y": 684.7865982055664,
+      "width": 210.078125,
+      "height": 60,
+      "strokeWidth": 2,
+      "link": null,
+      "boundElements": [
+        {
+          "id": "lbl_NextJS",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "id": "lbl_NextJS",
+      "type": "text",
+      "x": 8,
+      "y": 702.2865982055664,
+      "width": 210.078125,
+      "height": 25,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "roundness": null,
+      "seed": 1399874,
+      "version": 1,
+      "versionNonce": 1499865,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 1774927214600,
+      "link": null,
+      "locked": false,
+      "text": "Next.js on Vercel",
+      "fontSize": 20,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "containerId": "NextJS",
+      "originalText": "Next.js on Vercel",
+      "rawText": "Next.js on Vercel",
+      "lineHeight": 1.25
+    },
+    {
+      "id": "USGSApi_Airflow",
+      "type": "arrow",
+      "groupIds": [],
+      "x": 179.43,
+      "y": 98,
+      "strokeWidth": 2,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          40
+        ],
+        [
+          84.137,
+          78.34100000000001
+        ]
+      ],
+      "roundness": {
+        "type": 2
+      },
+      "start": {
+        "id": "USGSApi"
+      },
+      "end": {
+        "id": "Airflow"
+      },
+      "boundElements": [
+        {
+          "id": "lbl_USGSApi_Airflow",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "id": "lbl_USGSApi_Airflow",
+      "type": "text",
+      "x": 99.43,
+      "y": 125.5,
+      "width": 160,
+      "height": 25,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "roundness": null,
+      "seed": 1599856,
+      "version": 1,
+      "versionNonce": 1699847,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 1774927214600,
+      "link": null,
+      "locked": false,
+      "text": "stream flow and temp",
+      "fontSize": 20,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "containerId": "USGSApi_Airflow",
+      "originalText": "stream flow and temp",
+      "rawText": "stream flow and temp",
+      "lineHeight": 1.25
+    },
+    {
+      "id": "OpenMeteo_Airflow",
+      "type": "arrow",
+      "groupIds": [],
+      "x": 463.367,
+      "y": 83,
+      "strokeWidth": 2,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          55
+        ],
+        [
+          -70.94900000000001,
+          93.107
+        ]
+      ],
+      "roundness": {
+        "type": 2
+      },
+      "start": {
+        "id": "OpenMeteo"
+      },
+      "end": {
+        "id": "Airflow"
+      },
+      "boundElements": [
+        {
+          "id": "lbl_OpenMeteo_Airflow",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "id": "lbl_OpenMeteo_Airflow",
+      "type": "text",
+      "x": 383.367,
+      "y": 125.5,
+      "width": 160,
+      "height": 25,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "roundness": null,
+      "seed": 1799838,
+      "version": 1,
+      "versionNonce": 1899829,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 1774927214600,
+      "link": null,
+      "locked": false,
+      "text": "weather and forecast",
+      "fontSize": 20,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "containerId": "OpenMeteo_Airflow",
+      "originalText": "weather and forecast",
+      "rawText": "weather and forecast",
+      "lineHeight": 1.25
+    },
+    {
+      "id": "Airflow_Postgres",
+      "type": "arrow",
+      "groupIds": [],
+      "x": 255.392,
+      "y": 238,
+      "strokeWidth": 2,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          -142.353,
+          55
+        ],
+        [
+          -142.353,
+          108.22199999999998
+        ]
+      ],
+      "roundness": {
+        "type": 2
+      },
+      "start": {
+        "id": "Airflow"
+      },
+      "end": {
+        "id": "Postgres"
+      },
+      "boundElements": [
+        {
+          "id": "lbl_Airflow_Postgres",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "id": "lbl_Airflow_Postgres",
+      "type": "text",
+      "x": 33.03899999999999,
+      "y": 280.5,
+      "width": 160,
+      "height": 25,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "roundness": null,
+      "seed": 1999820,
+      "version": 1,
+      "versionNonce": 2099811,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 1774927214600,
+      "link": null,
+      "locked": false,
+      "text": "gauge and weather readings",
+      "fontSize": 20,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "containerId": "Airflow_Postgres",
+      "originalText": "gauge and weather readings",
+      "rawText": "gauge and weather readings",
+      "lineHeight": 1.25
+    },
+    {
+      "id": "Airflow_MLflow",
+      "type": "arrow",
+      "groupIds": [],
+      "x": 333.039,
+      "y": 238,
+      "strokeWidth": 2,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          55
+        ],
+        [
+          52.21199999999999,
+          109.42500000000001
+        ]
+      ],
+      "roundness": {
+        "type": 2
+      },
+      "start": {
+        "id": "Airflow"
+      },
+      "end": {
+        "id": "MLflow"
+      },
+      "boundElements": [
+        {
+          "id": "lbl_Airflow_MLflow",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "id": "lbl_Airflow_MLflow",
+      "type": "text",
+      "x": 253.039,
+      "y": 280.5,
+      "width": 160,
+      "height": 25,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "roundness": null,
+      "seed": 2199802,
+      "version": 1,
+      "versionNonce": 2299793,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 1774927214600,
+      "link": null,
+      "locked": false,
+      "text": "log and promote model",
+      "fontSize": 20,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "containerId": "Airflow_MLflow",
+      "originalText": "log and promote model",
+      "rawText": "log and promote model",
+      "lineHeight": 1.25
+    },
+    {
+      "id": "MLflow_Airflow",
+      "type": "arrow",
+      "groupIds": [],
+      "x": 474.777,
+      "y": 350.311,
+      "strokeWidth": 2,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          54.98100000000005,
+          -57.31099999999998
+        ],
+        [
+          -68.63599999999997,
+          -110.72399999999999
+        ]
+      ],
+      "roundness": {
+        "type": 2
+      },
+      "start": {
+        "id": "MLflow"
+      },
+      "end": {
+        "id": "Airflow"
+      },
+      "boundElements": [
+        {
+          "id": "lbl_MLflow_Airflow",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "id": "lbl_MLflow_Airflow",
+      "type": "text",
+      "x": 449.75800000000004,
+      "y": 280.5,
+      "width": 160,
+      "height": 25,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "roundness": null,
+      "seed": 2399784,
+      "version": 1,
+      "versionNonce": 2499775,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 1774927214600,
+      "link": null,
+      "locked": false,
+      "text": "production model",
+      "fontSize": 20,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "containerId": "MLflow_Airflow",
+      "originalText": "production model",
+      "rawText": "production model",
+      "lineHeight": 1.25
+    },
+    {
+      "id": "Postgres_FastAPI",
+      "type": "arrow",
+      "groupIds": [],
+      "x": 113.039,
+      "y": 432.564,
+      "strokeWidth": 2,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          57.222999999999956
+        ],
+        [
+          0,
+          108.22300000000001
+        ]
+      ],
+      "roundness": {
+        "type": 2
+      },
+      "start": {
+        "id": "Postgres"
+      },
+      "end": {
+        "id": "FastAPI"
+      },
+      "boundElements": [
+        {
+          "id": "lbl_Postgres_FastAPI",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "id": "lbl_Postgres_FastAPI",
+      "type": "text",
+      "x": 33.039,
+      "y": 477.287,
+      "width": 160,
+      "height": 25,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "roundness": null,
+      "seed": 2599766,
+      "version": 1,
+      "versionNonce": 2699757,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 1774927214600,
+      "link": null,
+      "locked": false,
+      "text": "readings and predictions",
+      "fontSize": 20,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "containerId": "Postgres_FastAPI",
+      "originalText": "readings and predictions",
+      "rawText": "readings and predictions",
+      "lineHeight": 1.25
+    },
+    {
+      "id": "FastAPI_NextJS",
+      "type": "arrow",
+      "groupIds": [],
+      "x": 113.039,
+      "y": 604.787,
+      "strokeWidth": 2,
+      "points": [
+        [
+          0,
+          0
+        ],
+        [
+          0,
+          40
+        ],
+        [
+          0,
+          76
+        ]
+      ],
+      "roundness": {
+        "type": 2
+      },
+      "start": {
+        "id": "FastAPI"
+      },
+      "end": {
+        "id": "NextJS"
+      },
+      "boundElements": [
+        {
+          "id": "lbl_FastAPI_NextJS",
+          "type": "text"
+        }
+      ]
+    },
+    {
+      "id": "lbl_FastAPI_NextJS",
+      "type": "text",
+      "x": 33.039,
+      "y": 632.287,
+      "width": 160,
+      "height": 25,
+      "angle": 0,
+      "strokeColor": "#1e1e1e",
+      "backgroundColor": "transparent",
+      "fillStyle": "solid",
+      "strokeWidth": 1,
+      "strokeStyle": "solid",
+      "roughness": 1,
+      "opacity": 100,
+      "groupIds": [],
+      "frameId": null,
+      "roundness": null,
+      "seed": 2799748,
+      "version": 1,
+      "versionNonce": 2899739,
+      "isDeleted": false,
+      "boundElements": null,
+      "updated": 1774927214600,
+      "link": null,
+      "locked": false,
+      "text": "REST JSON",
+      "fontSize": 20,
+      "fontFamily": 1,
+      "textAlign": "center",
+      "verticalAlign": "middle",
+      "containerId": "FastAPI_NextJS",
+      "originalText": "REST JSON",
+      "rawText": "REST JSON",
+      "lineHeight": 1.25
+    }
+  ],
+  "appState": {
+    "gridSize": null,
+    "viewBackgroundColor": "#ffffff"
+  },
+  "files": {}
+}
