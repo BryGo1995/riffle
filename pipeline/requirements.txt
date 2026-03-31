@@ -1,0 +1,13 @@
+apache-airflow==2.9.3
+apache-airflow-providers-postgres==5.10.0
+xgboost==2.0.3
+mlflow==2.12.1
+scikit-learn==1.4.2
+pandas==2.2.2
+numpy==1.26.4
+psycopg2-binary==2.9.9
+sqlalchemy==2.0.30
+requests==2.31.0
+pytest==8.2.0
+pytest-mock==3.14.0
+responses==0.25.3
