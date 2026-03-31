@@ -1,47 +1,49 @@
 import sys
 sys.path.insert(0, "pipeline")
 import os
+os.environ.setdefault("AIRFLOW_HOME", "/tmp/airflow_test")
 os.environ.setdefault("DATABASE_URL", "postgresql+psycopg2://riffle:riffle@localhost/riffle")
 os.environ.setdefault("MLFLOW_TRACKING_URI", "http://localhost:5000")
 import pytest
 from airflow.models import DagBag
 
+
 @pytest.fixture(scope="module")
 def dagbag():
     return DagBag(dag_folder="pipeline/dags", include_examples=False)
 
-def test_gauge_ingest_dag_loads(dagbag):
-    dag = dagbag.get_dag("gauge_ingest")
+
+def test_ingest_score_dag_loads(dagbag):
+    dag = dagbag.get_dag("ingest_score")
     assert dag is not None
     assert dagbag.import_errors == {}
 
-def test_weather_ingest_dag_loads(dagbag):
-    dag = dagbag.get_dag("weather_ingest")
-    assert dag is not None
-
-def test_condition_score_dag_loads(dagbag):
-    dag = dagbag.get_dag("condition_score")
-    assert dag is not None
 
 def test_train_dag_loads(dagbag):
     dag = dagbag.get_dag("train")
     assert dag is not None
 
-def test_gauge_ingest_has_expected_tasks(dagbag):
-    dag = dagbag.get_dag("gauge_ingest")
+
+def test_ingest_score_dag_is_hourly(dagbag):
+    dag = dagbag.get_dag("ingest_score")
+    assert dag.schedule_interval == "0 * * * *"
+
+
+def test_ingest_score_dag_has_expected_tasks(dagbag):
+    dag = dagbag.get_dag("ingest_score")
     task_ids = {t.task_id for t in dag.tasks}
-    assert "fetch_and_store_readings" in task_ids
+    assert task_ids == {"fetch_weather", "fetch_gauge", "score_conditions"}
 
-def test_weather_ingest_has_expected_tasks(dagbag):
-    dag = dagbag.get_dag("weather_ingest")
-    task_ids = {t.task_id for t in dag.tasks}
-    assert "fetch_and_store_weather" in task_ids
 
-def test_condition_score_dag_schedule(dagbag):
-    dag = dagbag.get_dag("condition_score")
-    # Should run at 7:30am MT = 13:30 UTC
-    assert "30 13" in dag.schedule_interval
+def test_score_conditions_depends_on_both_ingest_tasks(dagbag):
+    dag = dagbag.get_dag("ingest_score")
+    score_task = dag.get_task("score_conditions")
+    upstream_ids = {t.task_id for t in score_task.upstream_list}
+    assert "fetch_weather" in upstream_ids
+    assert "fetch_gauge" in upstream_ids
 
-def test_train_dag_is_weekly(dagbag):
-    dag = dagbag.get_dag("train")
-    assert "0 9" in dag.schedule_interval  # Monday 3am MT = 9am UTC
+
+def test_old_dags_removed(dagbag):
+    assert dagbag.get_dag("gauge_ingest") is None
+    assert dagbag.get_dag("weather_ingest") is None
+    assert dagbag.get_dag("condition_score") is None
