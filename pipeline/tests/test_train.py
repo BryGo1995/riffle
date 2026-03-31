@@ -40,7 +40,7 @@ def test_label_excellent():
     assert label_condition(150, 50.0, seasonal_median=150, thresholds=THRESHOLDS) == "Excellent"
 
 def test_train_model_returns_booster_and_version():
-    # Synthetic dataset: 50 rows, 8 features
+    # Synthetic dataset: 50 rows, 15 features
     n = 50
     df = pd.DataFrame({
         "flow_cfs": [150.0] * n,
@@ -50,7 +50,14 @@ def test_train_model_returns_booster_and_version():
         "precip_72h_mm": [0.0] * n,
         "air_temp_f": [55.0] * n,
         "day_of_year": [90] * n,
+        "hour_of_day": [8] * n,
         "days_since_precip_event": [5] * n,
+        "precip_probability": [0] * n,
+        "snowfall_mm": [0.0] * n,
+        "wind_speed_mph": [5.0] * n,
+        "weather_code": [1] * n,
+        "cloud_cover_pct": [20] * n,
+        "surface_pressure_hpa": [1013.25] * n,
         "condition": ["Good"] * n,
     })
     import mlflow

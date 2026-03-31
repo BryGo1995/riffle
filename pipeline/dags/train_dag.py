@@ -1,7 +1,7 @@
 """train_dag — Weekly, Monday 3:00am MT (9:00 UTC).
 
 1. Pull historical gauge_readings + weather_readings from Postgres
-2. Join on gauge_id + date
+2. Join on hour-truncated timestamp
 3. Generate bootstrapped labels from domain thresholds
 4. Train XGBoost classifier, log to MLflow
 5. Promote best model to production in MLflow registry
@@ -29,8 +29,13 @@ def train_and_promote():
     for gauge_cfg in GAUGES:
         gauge_id = get_gauge_id(gauge_cfg["usgs_gauge_id"])
         gauge_rows = get_recent_gauge_readings(gauge_id, days=365)
-        weather_rows = get_recent_weather_readings(gauge_id, days=365)
-        weather_by_date = {r["date"]: r for r in weather_rows}
+        weather_rows = get_recent_weather_readings(gauge_id, hours=365 * 24)
+
+        # Key weather by hour-truncated timestamp for join
+        weather_by_hour = {
+            r["observed_at"].replace(minute=0, second=0, microsecond=0): r
+            for r in weather_rows
+        }
 
         thresholds = gauge_cfg["flow_thresholds"]
         flow_values = [r["flow_cfs"] for r in gauge_rows if r["flow_cfs"]]
@@ -39,8 +44,8 @@ def train_and_promote():
         for row in gauge_rows:
             if not row["flow_cfs"]:
                 continue
-            target_date = row["fetched_at"].date()
-            weather = weather_by_date.get(target_date)
+            target_datetime = row["fetched_at"].replace(minute=0, second=0, microsecond=0)
+            weather = weather_by_hour.get(target_datetime)
             if not weather:
                 continue
             features = build_feature_vector(
@@ -49,8 +54,14 @@ def train_and_promote():
                 water_temp_f=row["water_temp_f"],
                 air_temp_f=weather["air_temp_f"],
                 precip_24h_mm=weather["precip_mm"],
-                target_date=target_date,
+                target_datetime=target_datetime,
                 weather_history=weather_rows,
+                precip_probability=weather.get("precip_probability"),
+                snowfall_mm=weather.get("snowfall_mm", 0.0),
+                wind_speed_mph=weather.get("wind_speed_mph", 0.0),
+                weather_code=weather.get("weather_code", 0),
+                cloud_cover_pct=weather.get("cloud_cover_pct", 0),
+                surface_pressure_hpa=weather.get("surface_pressure_hpa", 1013.25),
             )
             condition = label_condition(
                 flow_cfs=row["flow_cfs"],

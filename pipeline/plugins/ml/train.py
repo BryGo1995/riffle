@@ -17,7 +17,9 @@ LABEL_TO_INT = {c: i for i, c in enumerate(CONDITION_CLASSES)}
 FEATURE_COLS = [
     "flow_cfs", "gauge_height_ft", "water_temp_f",
     "precip_24h_mm", "precip_72h_mm", "air_temp_f",
-    "day_of_year", "days_since_precip_event",
+    "day_of_year", "hour_of_day", "days_since_precip_event",
+    "precip_probability", "snowfall_mm", "wind_speed_mph",
+    "weather_code", "cloud_cover_pct", "surface_pressure_hpa",
 ]
 
 
