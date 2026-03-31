@@ -1,65 +1,80 @@
-"""Open-Meteo forecast client.
+"""Open-Meteo weather client — forecast and historical.
 
-Fetches today's conditions + 3-day forecast for a lat/lon.
-Returns 4 WeatherDay objects: index 0 is today (is_forecast=False),
-indices 1-3 are forecast days (is_forecast=True).
+fetch_weather_forecast: current hour + 72h forecast from Open-Meteo forecast API.
+fetch_weather_historical: hourly historical data from Open-Meteo archive API.
 """
 
 from dataclasses import dataclass
-from datetime import date
-from typing import List
+from datetime import datetime
+from typing import List, Optional
+from zoneinfo import ZoneInfo
 import requests
 
-OPEN_METEO_URL = "https://api.open-meteo.com/v1/forecast"
+FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
+ARCHIVE_URL = "https://archive-api.open-meteo.com/v1/archive"
+MT = ZoneInfo("America/Denver")
+
+HOURLY_VARS = (
+    "precipitation,precipitation_probability,temperature_2m,"
+    "snowfall,wind_speed_10m,weather_code,cloud_cover,surface_pressure"
+)
+HISTORICAL_VARS = (
+    "precipitation,temperature_2m,snowfall,wind_speed_10m,"
+    "weather_code,cloud_cover,surface_pressure"
+)
 
 
 @dataclass
-class WeatherDay:
-    date: date
+class WeatherHour:
+    observed_at: datetime
     precip_mm: float
+    precip_probability: Optional[int]
     air_temp_f: float
+    snowfall_mm: float
+    wind_speed_mph: float
+    weather_code: int
+    cloud_cover_pct: int
+    surface_pressure_hpa: float
     is_forecast: bool
 
 
-def fetch_weather(lat: float, lon: float) -> List[WeatherDay]:
-    """Fetch today + 3-day forecast from Open-Meteo.
+def _parse_hourly(data: dict, has_precip_prob: bool) -> List[WeatherHour]:
+    h = data["hourly"]
+    times = h["time"]
+    hours = []
+    for i, t in enumerate(times):
+        observed_at = datetime.fromisoformat(t).replace(tzinfo=MT)
+        hours.append(WeatherHour(
+            observed_at=observed_at,
+            precip_mm=h["precipitation"][i] or 0.0,
+            precip_probability=h["precipitation_probability"][i] if has_precip_prob else None,
+            air_temp_f=h["temperature_2m"][i] if h["temperature_2m"][i] is not None else 0.0,
+            snowfall_mm=h["snowfall"][i] or 0.0,
+            wind_speed_mph=h["wind_speed_10m"][i] or 0.0,
+            weather_code=int(h["weather_code"][i]) if h["weather_code"][i] is not None else 0,
+            cloud_cover_pct=int(h["cloud_cover"][i]) if h["cloud_cover"][i] is not None else 0,
+            surface_pressure_hpa=h["surface_pressure"][i] or 1013.25,
+            is_forecast=(i > 0),
+        ))
+    return hours
 
-    Raises RuntimeError on non-2xx HTTP response.
-    """
+
+def fetch_weather_forecast(lat: float, lon: float) -> List[WeatherHour]:
+    """Fetch current hour + 72h forecast. First row is current (is_forecast=False)."""
     params = {
         "latitude": lat,
         "longitude": lon,
-        "daily": "precipitation_sum,temperature_2m_max",
-        "forecast_days": 4,
+        "hourly": HOURLY_VARS,
+        "forecast_hours": 73,
         "temperature_unit": "fahrenheit",
+        "wind_speed_unit": "mph",
         "precipitation_unit": "mm",
         "timezone": "America/Denver",
     }
-    resp = requests.get(OPEN_METEO_URL, params=params, timeout=30)
+    resp = requests.get(FORECAST_URL, params=params, timeout=30)
     if not resp.ok:
-        raise RuntimeError(f"Open-Meteo API returned {resp.status_code}")
-
+        raise RuntimeError(f"Open-Meteo forecast API returned {resp.status_code}")
     try:
-        daily = resp.json()["daily"]
-        time_data = daily["time"]
-        precip_data = daily["precipitation_sum"]
-        temp_data = daily["temperature_2m_max"]
+        return _parse_hourly(resp.json(), has_precip_prob=True)
     except KeyError as e:
-        raise RuntimeError(
-            f"Open-Meteo API response missing expected key: {e}. "
-            "Ensure API schema includes 'time', 'precipitation_sum', and 'temperature_2m_max'."
-        )
-
-    days = []
-    for i, (dt_str, precip, temp) in enumerate(
-        zip(time_data, precip_data, temp_data)
-    ):
-        days.append(
-            WeatherDay(
-                date=date.fromisoformat(dt_str),
-                precip_mm=precip or 0.0,
-                air_temp_f=temp if temp is not None else 0.0,
-                is_forecast=(i > 0),
-            )
-        )
-    return days
+        raise RuntimeError(f"Open-Meteo forecast response missing key: {e}")
