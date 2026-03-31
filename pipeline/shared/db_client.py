@@ -168,7 +168,11 @@ def get_recent_gauge_readings(gauge_id: int, days: int = 90) -> List[dict]:
 
 
 def get_recent_weather_readings(gauge_id: int, hours: int = 2160) -> List[dict]:
-    """Returns hourly observed (non-forecast) rows for the last `hours` hours, newest first. (2160 = 90 days)"""
+    """Returns observed-only (is_forecast=FALSE) hourly rows for the last `hours` hours, newest first.
+
+    Use get_forecast_weather() to retrieve upcoming forecast rows.
+    Default 2160 hours = 90 days.
+    """
     with get_session() as session:
         rows = session.execute(
             text("""

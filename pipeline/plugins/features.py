@@ -7,6 +7,7 @@ weather_history is a list of dicts with key: observed_at (datetime), precip_mm (
 from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
+from zoneinfo import ZoneInfo
 
 
 def compute_precip_72h(weather_history: List[Dict], target_datetime: datetime) -> float:
@@ -27,9 +28,9 @@ def compute_days_since_precip(
     """Days since last day whose cumulative hourly precip >= threshold_mm."""
     daily_totals: Dict = defaultdict(float)
     for row in weather_history:
-        daily_totals[row["observed_at"].date()] += row["precip_mm"]
+        daily_totals[row["observed_at"].astimezone(ZoneInfo("America/Denver")).date()] += row["precip_mm"]
 
-    target_date = target_datetime.date()
+    target_date = target_datetime.astimezone(ZoneInfo("America/Denver")).date()
     events = [d for d, total in daily_totals.items() if total >= threshold_mm and d <= target_date]
     if not events:
         return sentinel
