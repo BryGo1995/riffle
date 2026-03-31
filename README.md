@@ -1,0 +1,53 @@
+# Riffle — Colorado Fly Fishing Conditions
+
+Real-time USGS stream gauge conditions + XGBoost-powered 3-day fishing forecasts
+for Colorado rivers, surfaced on an interactive Next.js map.
+
+## Architecture
+
+````
+USGS API ──► gauge_ingest_dag ──► gauge_readings (Postgres)
+                                           │
+Open-Meteo ──► weather_ingest_dag ──► weather_readings (Postgres)
+                                           │
+                               condition_score_dag ──► predictions (Postgres)
+                               train_dag (weekly) ──► MLflow model registry
+                                           │
+                                      FastAPI :8000
+                                           │
+                                   Next.js (Vercel)
+````
+
+## Quick Start
+
+```bash
+cp .env.example .env          # fill in AIRFLOW__CORE__FERNET_KEY
+docker-compose up -d
+python pipeline/scripts/seed_db.py   # one-time gauge seed
+
+# Trigger initial pipeline run
+docker-compose exec airflow-scheduler airflow dags trigger gauge_ingest
+docker-compose exec airflow-scheduler airflow dags trigger weather_ingest
+# (wait ~30s for both to complete)
+docker-compose exec airflow-scheduler airflow dags trigger condition_score
+
+# Frontend
+cd web && NEXT_PUBLIC_API_URL=http://localhost:8000 npm run dev
+```
+
+## Services
+
+| Service | URL | Credentials |
+|---------|-----|-------------|
+| Airflow | http://localhost:8080 | admin / admin |
+| MLflow | http://localhost:5000 | — |
+| API | http://localhost:8000 | — |
+| API docs | http://localhost:8000/docs | — |
+| Frontend | http://localhost:3000 | — |
+
+## Stack
+
+- **Pipeline:** Apache Airflow 2.9, XGBoost, MLflow, Python 3.11
+- **API:** FastAPI, SQLAlchemy, PostgreSQL 15
+- **Frontend:** Next.js 14 (App Router), TypeScript, Tailwind CSS, Leaflet.js
+- **Deploy:** Docker Compose (local/Railway), Vercel (frontend)
