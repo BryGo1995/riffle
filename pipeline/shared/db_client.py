@@ -1,13 +1,12 @@
 """Postgres helpers for Riffle.
 
 Uses raw SQL via SQLAlchemy text() for clarity and portability.
-Call get_session() as a context manager for each operation.
 """
 
 import os
 from contextlib import contextmanager
-from datetime import date, datetime
-from typing import Generator, List, Optional, Tuple
+from datetime import datetime, timedelta, timezone
+from typing import Generator, List, Optional
 
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
@@ -54,6 +53,7 @@ def upsert_gauge_reading(
             text("""
                 INSERT INTO gauge_readings (gauge_id, fetched_at, flow_cfs, water_temp_f, gauge_height_ft)
                 VALUES (:gauge_id, :fetched_at, :flow_cfs, :water_temp_f, :gauge_height_ft)
+                ON CONFLICT (gauge_id, fetched_at) DO NOTHING
             """),
             {
                 "gauge_id": gauge_id,
@@ -67,26 +67,53 @@ def upsert_gauge_reading(
 
 def upsert_weather_reading(
     gauge_id: int,
-    date: date,
+    observed_at: datetime,
     precip_mm: float,
+    precip_probability: Optional[int],
     air_temp_f: float,
+    snowfall_mm: float,
+    wind_speed_mph: float,
+    weather_code: int,
+    cloud_cover_pct: int,
+    surface_pressure_hpa: float,
     is_forecast: bool,
 ) -> None:
     with get_session() as session:
         session.execute(
             text("""
-                INSERT INTO weather_readings (gauge_id, date, precip_mm, air_temp_f, is_forecast)
-                VALUES (:gauge_id, :date, :precip_mm, :air_temp_f, :is_forecast)
-                ON CONFLICT (gauge_id, date)
-                DO UPDATE SET precip_mm = EXCLUDED.precip_mm,
-                              air_temp_f = EXCLUDED.air_temp_f,
-                              is_forecast = EXCLUDED.is_forecast
+                INSERT INTO weather_readings (
+                    gauge_id, observed_at, precip_mm, precip_probability,
+                    air_temp_f, snowfall_mm, wind_speed_mph, weather_code,
+                    cloud_cover_pct, surface_pressure_hpa, is_forecast
+                )
+                VALUES (
+                    :gauge_id, :observed_at, :precip_mm, :precip_probability,
+                    :air_temp_f, :snowfall_mm, :wind_speed_mph, :weather_code,
+                    :cloud_cover_pct, :surface_pressure_hpa, :is_forecast
+                )
+                ON CONFLICT (gauge_id, observed_at)
+                DO UPDATE SET
+                    precip_mm = EXCLUDED.precip_mm,
+                    precip_probability = EXCLUDED.precip_probability,
+                    air_temp_f = EXCLUDED.air_temp_f,
+                    snowfall_mm = EXCLUDED.snowfall_mm,
+                    wind_speed_mph = EXCLUDED.wind_speed_mph,
+                    weather_code = EXCLUDED.weather_code,
+                    cloud_cover_pct = EXCLUDED.cloud_cover_pct,
+                    surface_pressure_hpa = EXCLUDED.surface_pressure_hpa,
+                    is_forecast = EXCLUDED.is_forecast
             """),
             {
                 "gauge_id": gauge_id,
-                "date": date,
+                "observed_at": observed_at,
                 "precip_mm": precip_mm,
+                "precip_probability": precip_probability,
                 "air_temp_f": air_temp_f,
+                "snowfall_mm": snowfall_mm,
+                "wind_speed_mph": wind_speed_mph,
+                "weather_code": weather_code,
+                "cloud_cover_pct": cloud_cover_pct,
+                "surface_pressure_hpa": surface_pressure_hpa,
                 "is_forecast": is_forecast,
             },
         )
@@ -94,7 +121,7 @@ def upsert_weather_reading(
 
 def upsert_prediction(
     gauge_id: int,
-    date: date,
+    target_datetime: datetime,
     condition: str,
     confidence: float,
     is_forecast: bool,
@@ -103,18 +130,19 @@ def upsert_prediction(
     with get_session() as session:
         session.execute(
             text("""
-                INSERT INTO predictions (gauge_id, date, condition, confidence, is_forecast, model_version)
-                VALUES (:gauge_id, :date, :condition, :confidence, :is_forecast, :model_version)
-                ON CONFLICT (gauge_id, date)
-                DO UPDATE SET condition = EXCLUDED.condition,
-                              confidence = EXCLUDED.confidence,
-                              is_forecast = EXCLUDED.is_forecast,
-                              model_version = EXCLUDED.model_version,
-                              scored_at = NOW()
+                INSERT INTO predictions (gauge_id, target_datetime, condition, confidence, is_forecast, model_version)
+                VALUES (:gauge_id, :target_datetime, :condition, :confidence, :is_forecast, :model_version)
+                ON CONFLICT (gauge_id, target_datetime)
+                DO UPDATE SET
+                    condition = EXCLUDED.condition,
+                    confidence = EXCLUDED.confidence,
+                    is_forecast = EXCLUDED.is_forecast,
+                    model_version = EXCLUDED.model_version,
+                    scored_at = NOW()
             """),
             {
                 "gauge_id": gauge_id,
-                "date": date,
+                "target_datetime": target_datetime,
                 "condition": condition,
                 "confidence": confidence,
                 "is_forecast": is_forecast,
@@ -124,7 +152,7 @@ def upsert_prediction(
 
 
 def get_recent_gauge_readings(gauge_id: int, days: int = 90) -> List[dict]:
-    """Returns up to `days` most recent rows, newest first."""
+    """Returns rows for the last `days` days, newest first."""
     with get_session() as session:
         rows = session.execute(
             text("""
@@ -139,16 +167,64 @@ def get_recent_gauge_readings(gauge_id: int, days: int = 90) -> List[dict]:
     return [dict(r._mapping) for r in rows]
 
 
-def get_recent_weather_readings(gauge_id: int, days: int = 90) -> List[dict]:
+def get_recent_weather_readings(gauge_id: int, hours: int = 2160) -> List[dict]:
+    """Returns hourly observed (non-forecast) rows for the last `hours` hours, newest first. (2160 = 90 days)"""
     with get_session() as session:
         rows = session.execute(
             text("""
-                SELECT date, precip_mm, air_temp_f, is_forecast
+                SELECT observed_at, precip_mm, precip_probability, air_temp_f,
+                       snowfall_mm, wind_speed_mph, weather_code,
+                       cloud_cover_pct, surface_pressure_hpa, is_forecast
                 FROM weather_readings
                 WHERE gauge_id = :gauge_id
-                  AND date >= CURRENT_DATE - :days
-                ORDER BY date DESC
+                  AND observed_at >= NOW() - (:hours * INTERVAL '1 hour')
+                  AND is_forecast = FALSE
+                ORDER BY observed_at DESC
             """),
-            {"gauge_id": gauge_id, "days": days},
+            {"gauge_id": gauge_id, "hours": hours},
         ).fetchall()
     return [dict(r._mapping) for r in rows]
+
+
+def get_forecast_weather(gauge_id: int) -> List[dict]:
+    """Returns current hour + all is_forecast=True rows in the next 72 hours, oldest first."""
+    with get_session() as session:
+        rows = session.execute(
+            text("""
+                SELECT observed_at, precip_mm, precip_probability, air_temp_f,
+                       snowfall_mm, wind_speed_mph, weather_code,
+                       cloud_cover_pct, surface_pressure_hpa, is_forecast
+                FROM weather_readings
+                WHERE gauge_id = :gauge_id
+                  AND observed_at >= DATE_TRUNC('hour', NOW())
+                  AND observed_at <= NOW() + INTERVAL '72 hours'
+                ORDER BY observed_at ASC
+            """),
+            {"gauge_id": gauge_id},
+        ).fetchall()
+    return [dict(r._mapping) for r in rows]
+
+
+def get_weather_for_hour(gauge_id: int, observed_at: datetime) -> Optional[dict]:
+    """Returns the weather row closest to the given hour, within ±2 hours."""
+    hour = observed_at.replace(minute=0, second=0, microsecond=0)
+    with get_session() as session:
+        row = session.execute(
+            text("""
+                SELECT observed_at, precip_mm, precip_probability, air_temp_f,
+                       snowfall_mm, wind_speed_mph, weather_code,
+                       cloud_cover_pct, surface_pressure_hpa, is_forecast
+                FROM weather_readings
+                WHERE gauge_id = :gauge_id
+                  AND observed_at BETWEEN :low AND :high
+                ORDER BY ABS(EXTRACT(EPOCH FROM (observed_at - :target))) ASC
+                LIMIT 1
+            """),
+            {
+                "gauge_id": gauge_id,
+                "low": hour - timedelta(hours=2),
+                "high": hour + timedelta(hours=2),
+                "target": hour,
+            },
+        ).fetchone()
+    return dict(row._mapping) if row else None
