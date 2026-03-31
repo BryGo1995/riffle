@@ -26,8 +26,12 @@ def _get_engine():
 @contextmanager
 def get_session() -> Generator[Session, None, None]:
     with Session(_get_engine()) as session:
-        yield session
-        session.commit()
+        try:
+            yield session
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
 
 
 def get_gauge_id(usgs_gauge_id: str) -> int:
@@ -127,7 +131,7 @@ def get_recent_gauge_readings(gauge_id: int, days: int = 90) -> List[dict]:
                 SELECT fetched_at, flow_cfs, water_temp_f, gauge_height_ft
                 FROM gauge_readings
                 WHERE gauge_id = :gauge_id
-                  AND fetched_at >= NOW() - INTERVAL ':days days'
+                  AND fetched_at >= NOW() - (:days * INTERVAL '1 day')
                 ORDER BY fetched_at DESC
             """),
             {"gauge_id": gauge_id, "days": days},
