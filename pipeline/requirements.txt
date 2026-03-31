@@ -6,7 +6,6 @@ scikit-learn==1.4.2
 pandas==2.2.2
 numpy==1.26.4
 psycopg2-binary==2.9.9
-sqlalchemy==2.0.30
 requests==2.31.0
 pytest==8.2.0
 pytest-mock==3.14.0

@@ -18,7 +18,7 @@ with engine.begin() as conn:
         conn.execute(
             text("""
                 INSERT INTO gauges (usgs_gauge_id, name, river, lat, lon, flow_thresholds)
-                VALUES (:usgs_gauge_id, :name, :river, :lat, :lon, :thresholds::jsonb)
+                VALUES (:usgs_gauge_id, :name, :river, :lat, :lon, CAST(:thresholds AS jsonb))
                 ON CONFLICT (usgs_gauge_id) DO UPDATE
                   SET name = EXCLUDED.name,
                       river = EXCLUDED.river,
