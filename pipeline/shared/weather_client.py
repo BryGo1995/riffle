@@ -39,16 +39,26 @@ def fetch_weather(lat: float, lon: float) -> List[WeatherDay]:
     if not resp.ok:
         raise RuntimeError(f"Open-Meteo API returned {resp.status_code}")
 
-    daily = resp.json()["daily"]
+    try:
+        daily = resp.json()["daily"]
+        time_data = daily["time"]
+        precip_data = daily["precipitation_sum"]
+        temp_data = daily["temperature_2m_max"]
+    except KeyError as e:
+        raise RuntimeError(
+            f"Open-Meteo API response missing expected key: {e}. "
+            "Ensure API schema includes 'time', 'precipitation_sum', and 'temperature_2m_max'."
+        )
+
     days = []
     for i, (dt_str, precip, temp) in enumerate(
-        zip(daily["time"], daily["precipitation_sum"], daily["temperature_2m_max"])
+        zip(time_data, precip_data, temp_data)
     ):
         days.append(
             WeatherDay(
                 date=date.fromisoformat(dt_str),
                 precip_mm=precip or 0.0,
-                air_temp_f=temp,
+                air_temp_f=temp if temp is not None else 0.0,
                 is_forecast=(i > 0),
             )
         )
