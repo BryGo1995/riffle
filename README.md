@@ -45,6 +45,11 @@ cd web && NEXT_PUBLIC_API_URL=http://localhost:8000 npm run dev
 | API docs | http://localhost:8000/docs | — |
 | Frontend | http://localhost:3000 | — |
 
+## Data Sources
+
+- **[USGS Water Services API](https://waterservices.usgs.gov/)** — Real-time stream gauge readings (flow, water temperature, gauge height) for 11 Colorado monitoring locations
+- **[Open-Meteo](https://open-meteo.com/)** — Free weather forecast API providing current conditions and 3-day precipitation/temperature forecasts
+
 ## Stack
 
 - **Pipeline:** Apache Airflow 2.9, XGBoost, MLflow, Python 3.11
