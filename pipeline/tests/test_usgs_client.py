@@ -65,3 +65,81 @@ def test_raises_on_http_error():
     rsps.add(rsps.GET, USGS_BASE, status=503)
     with pytest.raises(RuntimeError, match="USGS API"):
         fetch_gauge_reading("09035800")
+
+
+from datetime import date
+from shared.usgs_client import fetch_gauge_reading_range, USGSReadingTimestamped
+
+MOCK_RANGE_RESPONSE = {
+    "value": {
+        "timeSeries": [
+            {
+                "variable": {"variableCode": [{"value": "00060"}]},
+                "values": [{"value": [
+                    {"value": "245.0", "dateTime": "2024-03-31T14:00:00.000-07:00"},
+                    {"value": "248.0", "dateTime": "2024-03-31T15:00:00.000-07:00"},
+                ]}],
+            },
+            {
+                "variable": {"variableCode": [{"value": "00010"}]},
+                "values": [{"value": [
+                    {"value": "12.5", "dateTime": "2024-03-31T14:00:00.000-07:00"},
+                    {"value": "12.6", "dateTime": "2024-03-31T15:00:00.000-07:00"},
+                ]}],
+            },
+            {
+                "variable": {"variableCode": [{"value": "00065"}]},
+                "values": [{"value": [
+                    {"value": "1.82", "dateTime": "2024-03-31T14:00:00.000-07:00"},
+                    {"value": "1.85", "dateTime": "2024-03-31T15:00:00.000-07:00"},
+                ]}],
+            },
+        ]
+    }
+}
+
+
+@rsps.activate
+def test_fetch_gauge_reading_range_returns_timestamped_readings():
+    rsps.add(rsps.GET, USGS_BASE, json=MOCK_RANGE_RESPONSE, status=200)
+    results = fetch_gauge_reading_range(
+        "09035800",
+        start_date=date(2024, 3, 31),
+        end_date=date(2024, 3, 31),
+    )
+    assert len(results) == 2
+    assert all(isinstance(r, USGSReadingTimestamped) for r in results)
+
+
+@rsps.activate
+def test_fetch_gauge_reading_range_converts_temp_to_fahrenheit():
+    rsps.add(rsps.GET, USGS_BASE, json=MOCK_RANGE_RESPONSE, status=200)
+    results = fetch_gauge_reading_range(
+        "09035800",
+        start_date=date(2024, 3, 31),
+        end_date=date(2024, 3, 31),
+    )
+    # 12.5°C → 54.5°F
+    assert results[0].water_temp_f == pytest.approx(54.5)
+
+
+@rsps.activate
+def test_fetch_gauge_reading_range_sorted_by_time():
+    rsps.add(rsps.GET, USGS_BASE, json=MOCK_RANGE_RESPONSE, status=200)
+    results = fetch_gauge_reading_range(
+        "09035800",
+        start_date=date(2024, 3, 31),
+        end_date=date(2024, 3, 31),
+    )
+    assert results[0].fetched_at < results[1].fetched_at
+
+
+@rsps.activate
+def test_fetch_gauge_reading_range_fetched_at_is_timezone_aware():
+    rsps.add(rsps.GET, USGS_BASE, json=MOCK_RANGE_RESPONSE, status=200)
+    results = fetch_gauge_reading_range(
+        "09035800",
+        start_date=date(2024, 3, 31),
+        end_date=date(2024, 3, 31),
+    )
+    assert results[0].fetched_at.tzinfo is not None
