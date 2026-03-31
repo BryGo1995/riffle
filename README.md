@@ -39,11 +39,13 @@ cd web && NEXT_PUBLIC_API_URL=http://localhost:8000 npm run dev
 
 | Service | URL | Credentials |
 |---------|-----|-------------|
-| Airflow | http://localhost:8080 | admin / admin |
+| Airflow | http://localhost:8082 | admin / admin |
 | MLflow | http://localhost:5000 | — |
 | API | http://localhost:8000 | — |
 | API docs | http://localhost:8000/docs | — |
-| Frontend | http://localhost:3000 | — |
+| Frontend (dev) | http://localhost:3001 | — |
+
+> **Port notes:** Airflow runs on 8082 (8080 occupied by another stack). Next.js dev server runs on 3001 (`npm run dev -- -p 3001`) since 3000 is used by Grafana.
 
 ## Data Sources
 

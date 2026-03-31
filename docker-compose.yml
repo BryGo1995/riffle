@@ -70,7 +70,7 @@ services:
     <<: *airflow-common
     command: webserver
     ports:
-      - "8080:8080"
+      - "8082:8080"  # 8080 in use by odds-pipeline airflow
     restart: unless-stopped
 
   api:
