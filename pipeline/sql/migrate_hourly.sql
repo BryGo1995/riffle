@@ -1,29 +1,9 @@
--- Gauge registry
-CREATE TABLE IF NOT EXISTS gauges (
-    id SERIAL PRIMARY KEY,
-    usgs_gauge_id VARCHAR(20) UNIQUE NOT NULL,
-    name VARCHAR(100) NOT NULL,
-    river VARCHAR(100) NOT NULL,
-    lat DOUBLE PRECISION NOT NULL,
-    lon DOUBLE PRECISION NOT NULL,
-    flow_thresholds JSONB NOT NULL
-);
-
--- Raw USGS readings (one row per gauge per fetch)
-CREATE TABLE IF NOT EXISTS gauge_readings (
-    id SERIAL PRIMARY KEY,
-    gauge_id INTEGER REFERENCES gauges(id) ON DELETE CASCADE,
-    fetched_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    flow_cfs DOUBLE PRECISION,
-    water_temp_f DOUBLE PRECISION,
-    gauge_height_ft DOUBLE PRECISION
-);
-
-CREATE INDEX IF NOT EXISTS idx_gauge_readings_gauge_fetched
-    ON gauge_readings(gauge_id, fetched_at DESC);
+-- Drop tables that need schema changes (cascades to FK dependents)
+DROP TABLE IF EXISTS predictions;
+DROP TABLE IF EXISTS weather_readings;
 
 -- Hourly weather readings
-CREATE TABLE IF NOT EXISTS weather_readings (
+CREATE TABLE weather_readings (
     id                    SERIAL PRIMARY KEY,
     gauge_id              INTEGER REFERENCES gauges(id) ON DELETE CASCADE,
     observed_at           TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -39,8 +19,8 @@ CREATE TABLE IF NOT EXISTS weather_readings (
     UNIQUE(gauge_id, observed_at)
 );
 
--- ML predictions (one row per gauge per target hour)
-CREATE TABLE IF NOT EXISTS predictions (
+-- Hourly predictions
+CREATE TABLE predictions (
     id              SERIAL PRIMARY KEY,
     gauge_id        INTEGER REFERENCES gauges(id) ON DELETE CASCADE,
     target_datetime TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -52,5 +32,11 @@ CREATE TABLE IF NOT EXISTS predictions (
     UNIQUE(gauge_id, target_datetime)
 );
 
-CREATE INDEX IF NOT EXISTS idx_predictions_gauge_datetime
+CREATE INDEX idx_predictions_gauge_datetime
     ON predictions(gauge_id, target_datetime DESC);
+
+-- Add uniqueness to gauge_readings for idempotent backfill
+ALTER TABLE gauge_readings
+    DROP CONSTRAINT IF EXISTS gauge_readings_gauge_id_fetched_at_key;
+ALTER TABLE gauge_readings
+    ADD CONSTRAINT gauge_readings_gauge_id_fetched_at_key UNIQUE (gauge_id, fetched_at);
