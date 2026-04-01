@@ -1,40 +1,17 @@
 version: "3.8"
 
-x-airflow-common: &airflow-common
-  build:
-    context: .
-    dockerfile: docker/Dockerfile.airflow
-  environment:
-    AIRFLOW__CORE__EXECUTOR: LocalExecutor
-    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://riffle:riffle@postgres:5432/airflow
-    AIRFLOW__CORE__FERNET_KEY: ""
-    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
-    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
-    MLFLOW_TRACKING_URI: http://mlflow:5000
-    DATABASE_URL: postgresql+psycopg2://riffle:riffle@postgres:5432/riffle
-  volumes:
-    - ./pipeline/dags:/opt/airflow/dags
-    - ./pipeline/plugins:/opt/airflow/plugins
-    - ./pipeline/shared:/opt/airflow/shared
-    - ./pipeline/config:/opt/airflow/config
-    - airflow-logs:/opt/airflow/logs
-  depends_on:
-    postgres:
-      condition: service_healthy
-
 services:
   postgres:
     image: postgres:15
     environment:
       POSTGRES_USER: riffle
       POSTGRES_PASSWORD: riffle
-      POSTGRES_MULTIPLE_DATABASES: riffle,airflow
+      POSTGRES_DB: riffle
     ports:
-      - "5432:5432"
+      - "5434:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./pipeline/sql/init_schema.sql:/docker-entrypoint-initdb.d/01_schema.sql
-      - ./docker/create-multiple-postgresql-databases.sh:/docker-entrypoint-initdb.d/00_create_dbs.sh
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "riffle"]
       interval: 5s
@@ -56,27 +33,6 @@ services:
       postgres:
         condition: service_healthy
 
-  airflow-init:
-    <<: *airflow-common
-    command: >
-      bash -c "airflow db migrate && airflow users create
-      --username admin --password admin
-      --firstname Riffle --lastname Admin
-      --role Admin --email admin@riffle.local"
-    restart: on-failure
-
-  airflow-scheduler:
-    <<: *airflow-common
-    command: scheduler
-    restart: unless-stopped
-
-  airflow-webserver:
-    <<: *airflow-common
-    command: webserver
-    ports:
-      - "8082:8080"  # 8080 in use by odds-pipeline airflow
-    restart: unless-stopped
-
   api:
     build:
       context: ./api
@@ -90,7 +46,20 @@ services:
       postgres:
         condition: service_healthy
 
+  prefect-worker:
+    build:
+      context: ./pipeline
+      dockerfile: Dockerfile
+    environment:
+      DATABASE_URL: postgresql+psycopg2://riffle:riffle@postgres:5432/riffle
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      PREFECT_API_URL: ${PREFECT_API_URL:-}
+      PREFECT_API_KEY: ${PREFECT_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
 volumes:
   postgres-data:
   mlflow-artifacts:
-  airflow-logs:
