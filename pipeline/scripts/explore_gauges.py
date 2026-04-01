@@ -35,7 +35,7 @@ SITES_URL = f"{API_BASE}/collections/monitoring-locations/items"
 DISCHARGE_PARAM = "00060"
 ACTIVE_THRESHOLD_DAYS = 90
 
-API_KEY = os.environ.get("USGS_API_KEY", "CRXpkAGFOEscZMSYG2feMogNhhAWfg1cLltjfIN0")
+API_KEY = os.environ.get("USGS_API_KEY")
 
 
 def fetch_discharge_site_ids():
