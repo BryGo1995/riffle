@@ -15,7 +15,7 @@ import time
 from datetime import date, timedelta
 
 sys.path.insert(0, "pipeline")
-os.environ.setdefault("DATABASE_URL", "postgresql+psycopg2://riffle:riffle@localhost:5432/riffle")
+os.environ.setdefault("DATABASE_URL", "postgresql+psycopg2://riffle:riffle@localhost:5434/riffle")
 
 from config.rivers import GAUGES
 from shared.weather_client import fetch_weather_historical

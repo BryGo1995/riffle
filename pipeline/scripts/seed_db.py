@@ -6,7 +6,7 @@ Run once after `docker-compose up`:
 
 import sys, os, json
 sys.path.insert(0, "pipeline")
-os.environ.setdefault("DATABASE_URL", "postgresql+psycopg2://riffle:riffle@localhost:5432/riffle")
+os.environ.setdefault("DATABASE_URL", "postgresql+psycopg2://riffle:riffle@localhost:5434/riffle")
 
 from sqlalchemy import create_engine, text
 from config.rivers import GAUGES
