@@ -55,6 +55,7 @@ services:
       MLFLOW_TRACKING_URI: http://mlflow:5000
       PREFECT_API_URL: ${PREFECT_API_URL:-}
       PREFECT_API_KEY: ${PREFECT_API_KEY:-}
+      USGS_API_KEY: ${USGS_API_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy
