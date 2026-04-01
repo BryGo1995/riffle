@@ -1,15 +1,22 @@
-"""USGS Water Services instantaneous values client.
+"""USGS Water Data OGC API client.
 
 Fetches: stream flow (00060, cfs), water temp (00010, °C→°F),
 gauge height (00065, ft) for a single gauge ID.
+
+New API: https://api.waterdata.usgs.gov/ogcapi/v0
 """
 
+import os
 from dataclasses import dataclass
 from datetime import date as date_type, datetime, timezone
 from typing import List, Optional
+
 import requests
 
-USGS_IV_URL = "https://waterservices.usgs.gov/nwis/iv/"
+USGS_BASE_URL = "https://api.waterdata.usgs.gov/ogcapi/v0/collections"
+USGS_LATEST_URL = f"{USGS_BASE_URL}/latest-continuous/items"
+USGS_RANGE_URL = f"{USGS_BASE_URL}/continuous/items"
+
 PARAM_FLOW = "00060"
 PARAM_TEMP = "00010"
 PARAM_HEIGHT = "00065"
@@ -32,35 +39,48 @@ class USGSReadingTimestamped:
     gauge_height_ft: Optional[float]
 
 
+def _build_params(base: dict) -> dict:
+    """Add api_key to params only if USGS_API_KEY env var is set."""
+    api_key = os.environ.get("USGS_API_KEY")
+    if api_key:
+        base["api_key"] = api_key
+    return base
+
+
+def _celsius_to_fahrenheit(temp_c: float) -> float:
+    return temp_c * 9 / 5 + 32
+
+
 def fetch_gauge_reading(gauge_id: str) -> USGSReading:
-    """Fetch latest instantaneous reading for a USGS gauge.
+    """Fetch latest reading for a USGS gauge using the latest-continuous collection.
 
     Raises RuntimeError on non-2xx HTTP response.
     """
-    params = {
-        "sites": gauge_id,
-        "parameterCd": f"{PARAM_FLOW},{PARAM_TEMP},{PARAM_HEIGHT}",
-        "format": "json",
-        "siteStatus": "all",
-    }
-    resp = requests.get(USGS_IV_URL, params=params, timeout=30)
+    params = _build_params({
+        "monitoring_location_id": f"USGS-{gauge_id}",
+        "parameter_code": f"{PARAM_FLOW},{PARAM_TEMP},{PARAM_HEIGHT}",
+        "f": "json",
+    })
+
+    resp = requests.get(USGS_LATEST_URL, params=params, timeout=30)
     if not resp.ok:
         raise RuntimeError(f"USGS API returned {resp.status_code} for gauge {gauge_id}")
 
-    series = resp.json()["value"]["timeSeries"]
+    features = resp.json().get("features", [])
     values_by_param: dict[str, Optional[float]] = {}
 
-    for ts in series:
-        code = ts["variable"]["variableCode"][0]["value"]
-        raw_values = ts["values"][0]["value"]
-        if raw_values:
+    for feature in features:
+        props = feature.get("properties", {})
+        code = props.get("parameter_code")
+        raw_value = props.get("value")
+        if code is not None:
             try:
-                values_by_param[code] = float(raw_values[0]["value"])
+                values_by_param[code] = float(raw_value)
             except (ValueError, TypeError):
                 values_by_param[code] = None
 
     temp_c = values_by_param.get(PARAM_TEMP)
-    water_temp_f = (temp_c * 9 / 5) + 32 if temp_c is not None else None
+    water_temp_f = _celsius_to_fahrenheit(temp_c) if temp_c is not None else None
 
     return USGSReading(
         gauge_id=gauge_id,
@@ -75,45 +95,71 @@ def fetch_gauge_reading_range(
     start_date: date_type,
     end_date: date_type,
 ) -> List[USGSReadingTimestamped]:
-    """Fetch all instantaneous readings for a date range, sorted by time."""
-    request_params = {
-        "sites": gauge_id,
-        "parameterCd": f"{PARAM_FLOW},{PARAM_TEMP},{PARAM_HEIGHT}",
-        "startDT": start_date.isoformat(),
-        "endDT": end_date.isoformat(),
-        "format": "json",
-        "siteStatus": "all",
-    }
-    resp = requests.get(USGS_IV_URL, params=request_params, timeout=60)
-    if not resp.ok:
-        raise RuntimeError(f"USGS API returned {resp.status_code} for gauge {gauge_id}")
+    """Fetch all readings for a date range using the continuous collection.
 
-    series = resp.json()["value"]["timeSeries"]
+    Follows cursor-based pagination via links[rel=next].
+    Returns readings sorted by timestamp ascending.
+    """
+    params = _build_params({
+        "monitoring_location_id": f"USGS-{gauge_id}",
+        "parameter_code": f"{PARAM_FLOW},{PARAM_TEMP},{PARAM_HEIGHT}",
+        "datetime": f"{start_date.isoformat()}/{end_date.isoformat()}",
+        "f": "json",
+        "limit": 1000,
+    })
+
     readings_by_time: dict = {}
+    url: Optional[str] = USGS_RANGE_URL
 
-    for ts in series:
-        code = ts["variable"]["variableCode"][0]["value"]
-        for entry in ts["values"][0]["value"]:
-            dt_str = entry["dateTime"]
+    while url is not None:
+        if url == USGS_RANGE_URL:
+            resp = requests.get(url, params=params, timeout=60)
+        else:
+            resp = requests.get(url, timeout=60)
+
+        if not resp.ok:
+            raise RuntimeError(f"USGS API returned {resp.status_code} for gauge {gauge_id}")
+
+        data = resp.json()
+        features = data.get("features", [])
+
+        for feature in features:
+            props = feature.get("properties", {})
+            code = props.get("parameter_code")
+            raw_value = props.get("value")
+            time_str = props.get("time")
+
+            if code is None or time_str is None:
+                continue
+
             try:
-                val = float(entry["value"])
+                val = float(raw_value)
             except (ValueError, TypeError):
                 val = None
-            if dt_str not in readings_by_time:
-                readings_by_time[dt_str] = {}
-            readings_by_time[dt_str][code] = val
+
+            if time_str not in readings_by_time:
+                readings_by_time[time_str] = {}
+            readings_by_time[time_str][code] = val
+
+        # Follow pagination
+        url = None
+        for link in data.get("links", []):
+            if link.get("rel") == "next":
+                url = link.get("href")
+                break
 
     results = []
-    for dt_str, param_vals in readings_by_time.items():
-        fetched_at = datetime.fromisoformat(dt_str)
+    for time_str, param_vals in readings_by_time.items():
+        fetched_at = datetime.fromisoformat(time_str)
         if fetched_at.tzinfo is None:
             fetched_at = fetched_at.replace(tzinfo=timezone.utc)
+
         temp_c = param_vals.get(PARAM_TEMP)
         results.append(USGSReadingTimestamped(
             gauge_id=gauge_id,
             fetched_at=fetched_at,
             flow_cfs=param_vals.get(PARAM_FLOW),
-            water_temp_f=(temp_c * 9 / 5 + 32) if temp_c is not None else None,
+            water_temp_f=_celsius_to_fahrenheit(temp_c) if temp_c is not None else None,
             gauge_height_ft=param_vals.get(PARAM_HEIGHT),
         ))
 
