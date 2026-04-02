@@ -19,6 +19,7 @@ GAUGES = [
         "lat": 38.9097,
         "lon": -105.5666,
         "flow_thresholds": {"blowout": 500, "optimal_low": 80, "optimal_high": 250},
+        "active": True,
     },
     {
         "usgs_gauge_id": "09036000",
@@ -27,6 +28,7 @@ GAUGES = [
         "lat": 38.9419,
         "lon": -105.4958,
         "flow_thresholds": {"blowout": 600, "optimal_low": 100, "optimal_high": 350},
+        "active": True,
     },
     {
         "usgs_gauge_id": "09033300",
@@ -35,6 +37,7 @@ GAUGES = [
         "lat": 39.2525,
         "lon": -105.2192,
         "flow_thresholds": {"blowout": 800, "optimal_low": 150, "optimal_high": 400},
+        "active": True,
     },
     {
         "usgs_gauge_id": "09034500",
@@ -43,6 +46,7 @@ GAUGES = [
         "lat": 39.1886,
         "lon": -105.2511,
         "flow_thresholds": {"blowout": 700, "optimal_low": 100, "optimal_high": 350},
+        "active": True,
     },
     {
         "usgs_gauge_id": "07091200",
@@ -51,6 +55,7 @@ GAUGES = [
         "lat": 38.5347,
         "lon": -106.0008,
         "flow_thresholds": {"blowout": 2000, "optimal_low": 200, "optimal_high": 700},
+        "active": True,
     },
     {
         "usgs_gauge_id": "07096000",
@@ -59,6 +64,7 @@ GAUGES = [
         "lat": 38.4406,
         "lon": -105.2372,
         "flow_thresholds": {"blowout": 3000, "optimal_low": 300, "optimal_high": 1000},
+        "active": True,
     },
     {
         "usgs_gauge_id": "09081600",
@@ -67,6 +73,7 @@ GAUGES = [
         "lat": 39.3672,
         "lon": -106.9281,
         "flow_thresholds": {"blowout": 400, "optimal_low": 60, "optimal_high": 200},
+        "active": True,
     },
     {
         "usgs_gauge_id": "09085000",
@@ -75,6 +82,7 @@ GAUGES = [
         "lat": 39.5486,
         "lon": -107.3247,
         "flow_thresholds": {"blowout": 3000, "optimal_low": 200, "optimal_high": 800},
+        "active": True,
     },
     {
         "usgs_gauge_id": "09057500",
@@ -83,6 +91,7 @@ GAUGES = [
         "lat": 39.6328,
         "lon": -106.0694,
         "flow_thresholds": {"blowout": 500, "optimal_low": 50, "optimal_high": 200},
+        "active": True,
     },
     {
         "usgs_gauge_id": "06752000",
@@ -91,6 +100,7 @@ GAUGES = [
         "lat": 40.6883,
         "lon": -105.1561,
         "flow_thresholds": {"blowout": 2000, "optimal_low": 150, "optimal_high": 600},
+        "active": True,
     },
     {
         "usgs_gauge_id": "09070000",
@@ -99,5 +109,11 @@ GAUGES = [
         "lat": 39.5500,
         "lon": -107.3242,
         "flow_thresholds": {"blowout": 8000, "optimal_low": 500, "optimal_high": 2500},
+        "active": True,
     },
 ]
+
+# Gauges participating in the full ingest → ML pipeline.
+# Set active=False for gauges with no USGS flow data — they still
+# receive weather ingestion and weather-only rule-based scoring.
+ACTIVE_GAUGES = [g for g in GAUGES if g.get("active", True)]
