@@ -20,7 +20,7 @@ MOCK_GAUGES = [
 
 MOCK_PREDICTIONS_TODAY = [
     {
-        "gauge_id": 1, "date": date(2026, 3, 30), "condition": "Good",
+        "gauge_id": 1, "target_datetime": date(2026, 3, 30), "condition": "Good",
         "confidence": 0.82, "is_forecast": False, "model_version": "1",
     }
 ]
