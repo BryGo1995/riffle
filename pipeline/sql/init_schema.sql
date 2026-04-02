@@ -40,7 +40,7 @@ CREATE TABLE IF NOT EXISTS weather_readings (
     UNIQUE(gauge_id, observed_at)
 );
 
--- ML predictions (one row per gauge per target hour)
+-- Hourly ML predictions
 CREATE TABLE IF NOT EXISTS predictions (
     id              SERIAL PRIMARY KEY,
     gauge_id        INTEGER REFERENCES gauges(id) ON DELETE CASCADE,
