@@ -1,7 +1,7 @@
 import pandas as pd
 from prefect import flow, task
 
-from config.rivers import GAUGES
+from config.rivers import ACTIVE_GAUGES
 from shared.db_client import get_gauge_id, get_recent_gauge_readings, get_recent_weather_readings
 from plugins.ml.train import label_condition, train_model
 from plugins.ml.score import promote_model_to_production
@@ -10,7 +10,7 @@ from plugins.features import build_feature_vector
 
 def _train_and_promote():
     records = []
-    for gauge_cfg in GAUGES:
+    for gauge_cfg in ACTIVE_GAUGES:
         gauge_id = get_gauge_id(gauge_cfg["usgs_gauge_id"])
         gauge_rows = get_recent_gauge_readings(gauge_id, days=365)
         weather_rows = get_recent_weather_readings(gauge_id, hours=365 * 24)
