@@ -17,7 +17,7 @@ from datetime import date, timedelta
 sys.path.insert(0, "pipeline")
 os.environ.setdefault("DATABASE_URL", "postgresql+psycopg2://riffle:riffle@localhost:5434/riffle")
 
-from config.rivers import GAUGES
+from config.rivers import GAUGES, ACTIVE_GAUGES
 from shared.weather_client import fetch_weather_historical
 from shared.usgs_client import fetch_gauge_reading_range
 from shared.db_client import get_gauge_id, upsert_weather_reading, upsert_gauge_reading
@@ -84,21 +84,23 @@ def main():
 
     start = date.fromisoformat(args.start)
     end = date.fromisoformat(args.end)
-    total_gauges = len(GAUGES)
 
-    print(f"Backfilling {start} → {end} for {total_gauges} gauges")
-
+    print(f"Backfilling weather for {len(GAUGES)} gauges ({start} → {end})")
     for i, gauge_cfg in enumerate(GAUGES, 1):
         name = gauge_cfg["name"]
-        usgs_id = gauge_cfg["usgs_gauge_id"]
-        print(f"\n[{i}/{total_gauges}] {name} ({usgs_id})")
-
-        gauge_id = get_gauge_id(usgs_id)
-
+        print(f"\n[{i}/{len(GAUGES)}] {name} — weather")
+        gauge_id = get_gauge_id(gauge_cfg["usgs_gauge_id"])
         weather_count = backfill_weather(gauge_id, gauge_cfg["lat"], gauge_cfg["lon"], start, end)
-        gauge_count = backfill_gauge(gauge_id, usgs_id, start, end)
+        print(f"  {weather_count} weather rows")
 
-        print(f"  Done: {weather_count} weather rows, {gauge_count} gauge readings")
+    print(f"\nBackfilling gauge readings for {len(ACTIVE_GAUGES)} active gauges ({start} → {end})")
+    for i, gauge_cfg in enumerate(ACTIVE_GAUGES, 1):
+        name = gauge_cfg["name"]
+        usgs_id = gauge_cfg["usgs_gauge_id"]
+        print(f"\n[{i}/{len(ACTIVE_GAUGES)}] {name} ({usgs_id}) — gauge readings")
+        gauge_id = get_gauge_id(usgs_id)
+        gauge_count = backfill_gauge(gauge_id, usgs_id, start, end)
+        print(f"  {gauge_count} gauge readings")
 
     print("\nBackfill complete.")
 
