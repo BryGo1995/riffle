@@ -1,8 +1,8 @@
 """FastAPI route handlers for river/gauge endpoints.
 
-GET /api/rivers                         — all gauges with today's condition
-GET /api/rivers/{gauge_id}              — current condition + 3-day forecast
-GET /api/rivers/{gauge_id}/history      — last 30 days of conditions + key stats
+GET /api/v1/rivers                         — all gauges with today's condition
+GET /api/v1/rivers/{gauge_id}              — current condition + 3-day forecast
+GET /api/v1/rivers/{gauge_id}/history      — last 30 days of conditions + key stats
 """
 
 import os
@@ -38,7 +38,7 @@ def get_today_predictions(session: Session) -> Dict[int, dict]:
         text("""
             SELECT gauge_id, condition, confidence, is_forecast, model_version
             FROM predictions
-            WHERE date = CURRENT_DATE AND is_forecast = FALSE
+            WHERE DATE(target_datetime) = CURRENT_DATE AND is_forecast = FALSE
         """)
     ).mappings().fetchall()
     return {r["gauge_id"]: dict(r) for r in rows if "gauge_id" in r}
@@ -48,7 +48,7 @@ def get_gauge_forecast(session: Session, gauge_id_int: int) -> List[dict]:
     """Return today + 3 forecast day predictions for a gauge."""
     rows = session.execute(
         text("""
-            SELECT p.date, p.condition, p.confidence, p.is_forecast,
+            SELECT p.target_datetime, p.condition, p.confidence, p.is_forecast,
                    gr.flow_cfs, gr.water_temp_f, gr.gauge_height_ft,
                    wr.precip_mm, wr.air_temp_f
             FROM predictions p
@@ -60,11 +60,12 @@ def get_gauge_forecast(session: Session, gauge_id_int: int) -> List[dict]:
                 LIMIT 1
             ) gr ON TRUE
             LEFT JOIN weather_readings wr
-                ON wr.gauge_id = p.gauge_id AND wr.date = p.date
+                ON wr.gauge_id = p.gauge_id
+                AND DATE(wr.observed_at) = DATE(p.target_datetime)
             WHERE p.gauge_id = :gid
-              AND p.date >= CURRENT_DATE
-              AND p.date <= CURRENT_DATE + 3
-            ORDER BY p.date
+              AND DATE(p.target_datetime) >= CURRENT_DATE
+              AND DATE(p.target_datetime) <= CURRENT_DATE + 3
+            ORDER BY p.target_datetime
         """),
         {"gid": gauge_id_int},
     ).mappings().fetchall()
@@ -75,21 +76,21 @@ def get_gauge_history(session: Session, gauge_id_int: int) -> List[dict]:
     """Return last 30 days of predictions with key gauge stats."""
     rows = session.execute(
         text("""
-            SELECT p.date, p.condition, p.confidence,
+            SELECT p.target_datetime, p.condition, p.confidence,
                    gr.flow_cfs, gr.water_temp_f
             FROM predictions p
             LEFT JOIN LATERAL (
                 SELECT flow_cfs, water_temp_f
                 FROM gauge_readings
                 WHERE gauge_id = p.gauge_id
-                  AND DATE(fetched_at) = p.date
+                  AND DATE(fetched_at) = DATE(p.target_datetime)
                 ORDER BY fetched_at DESC
                 LIMIT 1
             ) gr ON TRUE
             WHERE p.gauge_id = :gid
-              AND p.date >= CURRENT_DATE - 30
+              AND DATE(p.target_datetime) >= CURRENT_DATE - 30
               AND p.is_forecast = FALSE
-            ORDER BY p.date DESC
+            ORDER BY p.target_datetime DESC
         """),
         {"gid": gauge_id_int},
     ).mappings().fetchall()
@@ -154,7 +155,7 @@ def get_river(gauge_id: str) -> Dict[str, Any]:
         "current": dict(latest_reading) if latest_reading else None,
         "forecast": [
             {
-                "date": str(f["date"]),
+                "date": str(f["target_datetime"]),
                 "condition": f["condition"],
                 "confidence": f["confidence"],
                 "is_forecast": f["is_forecast"],
@@ -187,7 +188,7 @@ def get_river_history(gauge_id: str) -> Dict[str, Any]:
         "river": gauge["river"],
         "history": [
             {
-                "date": str(h["date"]),
+                "date": str(h["target_datetime"]),
                 "condition": h["condition"],
                 "confidence": h["confidence"],
                 "flow_cfs": h.get("flow_cfs"),
