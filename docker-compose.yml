@@ -16,6 +16,10 @@ services:
       test: ["CMD", "pg_isready", "-U", "riffle"]
       interval: 5s
       retries: 5
+    networks:
+      default:
+        aliases:
+          - riffle-postgres
 
   mlflow:
     image: ghcr.io/mlflow/mlflow:v2.12.1
