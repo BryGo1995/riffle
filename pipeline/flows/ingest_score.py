@@ -105,7 +105,7 @@ def score_all_gauges():
             for weather_row in forecast_weather:
                 target_datetime = weather_row["observed_at"]
                 condition, confidence = score_weather_only(
-                    air_temp_f=weather_row["air_temp_f"] or 55.0,
+                    air_temp_f=weather_row["air_temp_f"] if weather_row["air_temp_f"] is not None else 55.0,
                     precip_mm=weather_row["precip_mm"] or 0.0,
                     precip_probability=weather_row["precip_probability"] or 0,
                     snowfall_mm=weather_row["snowfall_mm"] or 0.0,
