@@ -115,4 +115,4 @@ def test_confidence_ceiling_across_conditions():
     ]
     for kwargs in cases:
         _, conf = score_weather_only(**kwargs)
-        assert conf <= 0.80, f"confidence {conf} exceeds ceiling for {kwargs}"
+        assert conf <= 0.75, f"confidence {conf} exceeds ceiling for {kwargs}"
