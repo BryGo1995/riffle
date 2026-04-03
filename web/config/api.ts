@@ -51,13 +51,13 @@ export interface RiverHistory {
 }
 
 export async function fetchRivers(): Promise<RiverSummary[]> {
-  const res = await fetch(`${BASE_URL}/api/rivers`, { next: { revalidate: 3600 } });
+  const res = await fetch(`${BASE_URL}/api/v1/rivers`, { next: { revalidate: 3600 } });
   if (!res.ok) throw new Error("Failed to fetch rivers");
   return res.json();
 }
 
 export async function fetchRiver(gaugeId: string): Promise<RiverDetail> {
-  const res = await fetch(`${BASE_URL}/api/rivers/${gaugeId}`, {
+  const res = await fetch(`${BASE_URL}/api/v1/rivers/${gaugeId}`, {
     next: { revalidate: 3600 },
   });
   if (!res.ok) throw new Error(`Failed to fetch river ${gaugeId}`);
@@ -65,7 +65,7 @@ export async function fetchRiver(gaugeId: string): Promise<RiverDetail> {
 }
 
 export async function fetchRiverHistory(gaugeId: string): Promise<RiverHistory> {
-  const res = await fetch(`${BASE_URL}/api/rivers/${gaugeId}/history`, {
+  const res = await fetch(`${BASE_URL}/api/v1/rivers/${gaugeId}/history`, {
     next: { revalidate: 3600 },
   });
   if (!res.ok) throw new Error(`Failed to fetch history for ${gaugeId}`);
