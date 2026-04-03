@@ -7,6 +7,7 @@ New API: https://api.waterdata.usgs.gov/ogcapi/v0
 """
 
 import os
+import time
 from dataclasses import dataclass
 from datetime import date as date_type, datetime, timezone
 from typing import List, Optional
@@ -112,14 +113,22 @@ def fetch_gauge_reading_range(
     url: Optional[str] = USGS_RANGE_URL
 
     while url is not None:
-        if url == USGS_RANGE_URL:
-            resp = requests.get(url, params=params, timeout=60)
-        else:
-            resp = requests.get(url, timeout=60)
+        for attempt in range(4):
+            if url == USGS_RANGE_URL:
+                resp = requests.get(url, params=params, timeout=60)
+            else:
+                resp = requests.get(url, timeout=60)
+            if resp.status_code == 429:
+                retry_after = int(resp.headers.get("Retry-After", 60 * (2 ** attempt)))
+                print(f"    429 rate limit — waiting {retry_after}s before retry {attempt + 1}/4")
+                time.sleep(retry_after)
+                continue
+            break
 
         if not resp.ok:
             raise RuntimeError(f"USGS API returned {resp.status_code} for gauge {gauge_id}")
 
+        time.sleep(2.0)  # pace every request (including paginated) to avoid rate limiting
         data = resp.json()
         features = data.get("features", [])
 
