@@ -58,7 +58,7 @@ def backfill_weather(gauge_id: int, lat: float, lon: float, start: date, end: da
 
 def backfill_gauge(gauge_id: int, usgs_id: str, start: date, end: date) -> int:
     total = 0
-    for chunk_start, chunk_end in daterange_chunks(start, end, 30):
+    for chunk_start, chunk_end in daterange_chunks(start, end, 90):
         print(f"    Gauge {chunk_start} → {chunk_end}")
         readings = fetch_gauge_reading_range(usgs_id, chunk_start, chunk_end)
         for reading in readings:
@@ -70,7 +70,7 @@ def backfill_gauge(gauge_id: int, usgs_id: str, start: date, end: date) -> int:
                 gauge_height_ft=reading.gauge_height_ft,
             )
         total += len(readings)
-        time.sleep(0.5)
+        time.sleep(5.0)
     return total
 
 
@@ -99,6 +99,8 @@ def main():
         usgs_id = gauge_cfg["usgs_gauge_id"]
         print(f"\n[{i}/{len(ACTIVE_GAUGES)}] {name} ({usgs_id}) — gauge readings")
         gauge_id = get_gauge_id(usgs_id)
+        if i > 1:
+            time.sleep(15.0)  # cool down between gauges to avoid rate limiting
         gauge_count = backfill_gauge(gauge_id, usgs_id, start, end)
         print(f"  {gauge_count} gauge readings")
 
