@@ -25,7 +25,7 @@ registers both flow deployments with their cron schedules and executes runs loca
 
 ```bash
 cp .env.example .env
-docker-compose up -d
+docker compose up -d
 python pipeline/scripts/seed_db.py   # one-time gauge seed
 ```
 
@@ -95,5 +95,5 @@ MLflow production registry. (`retries=1, delay=300s`)
 ## Tests
 
 ```bash
-PYTHONPATH=pipeline pytest pipeline/tests/ -v   # 63 tests
+pytest pipeline/tests/ api/tests/ -v   # 90 tests
 ```
