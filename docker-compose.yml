@@ -3,6 +3,7 @@ version: "3.8"
 services:
   postgres:
     image: postgres:15
+    restart: unless-stopped
     environment:
       POSTGRES_USER: riffle
       POSTGRES_PASSWORD: riffle
@@ -23,6 +24,7 @@ services:
 
   mlflow:
     image: ghcr.io/mlflow/mlflow:v2.12.1
+    restart: unless-stopped
     command: >
       sh -c "pip install psycopg2-binary -q &&
       mlflow server
@@ -39,6 +41,7 @@ services:
         condition: service_healthy
 
   api:
+    restart: unless-stopped
     build:
       context: ./api
       dockerfile: Dockerfile
