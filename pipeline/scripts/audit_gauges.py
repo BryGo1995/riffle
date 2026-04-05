@@ -30,7 +30,8 @@ PARAMS = {
     "00045": "precipitation",
 }
 
-# Parameters that count toward the "active" rating
+# Parameters that count toward the 0-3 "active" rating.
+# Precipitation (00045) is excluded — it's supplemental context only.
 RATING_PARAMS = {"00060", "00065", "00010"}
 
 ACTIVE_THRESHOLD_HOURS = 48
@@ -124,6 +125,22 @@ def fetch_all_latest_by_param(param_code: str, co_gauge_ids: set[str]) -> dict[s
     return results
 
 
+def fmt_ts(time_str: str | None) -> str | None:
+    """Reformat ISO 8601 timestamp to 'YYYY-MM-DD HH:MM UTC'.
+
+    geopandas auto-parses ISO strings (e.g. '2024-01-15T14:30:00Z') to
+    Timestamp objects when loading GeoJSON, which Folium cannot re-serialize.
+    This format is human-readable but won't be auto-parsed by pandas/geopandas.
+    """
+    if not time_str:
+        return None
+    try:
+        dt = datetime.fromisoformat(time_str.replace("Z", "+00:00"))
+        return dt.strftime("%Y-%m-%d %H:%M UTC")
+    except Exception:
+        return time_str
+
+
 def hours_since(time_str: str | None, now: datetime) -> float | None:
     if not time_str:
         return None
@@ -150,6 +167,7 @@ def build_row(loc: dict, readings: dict, now: datetime) -> dict:
 
     # Per-parameter columns
     rating = 0
+    rating_4 = 0
     last_reading_times = []
     for code, label in PARAMS.items():
         r = readings.get(code, {})
@@ -159,17 +177,20 @@ def build_row(loc: dict, readings: dict, now: datetime) -> dict:
 
         row[f"{label}_value"] = value
         row[f"{label}_unit"] = r.get("unit")
-        row[f"{label}_last_at"] = t
+        row[f"{label}_last_at"] = fmt_ts(t)
         row[f"{label}_hours_ago"] = round(hrs, 1) if hrs is not None else None
-        row[f"{label}_active"] = (hrs is not None and hrs < ACTIVE_THRESHOLD_HOURS)
+        row[f"{label}_active"] = (hrs is not None and 0 <= hrs < ACTIVE_THRESHOLD_HOURS)
 
+        if row[f"{label}_active"]:
+            rating_4 += 1
         if code in RATING_PARAMS and row[f"{label}_active"]:
             rating += 1
         if t:
             last_reading_times.append(t)
 
-    row["reading_rating"] = rating
-    row["last_any_reading_at"] = max(last_reading_times) if last_reading_times else None
+    row["reading_rating"] = rating    # 0-3: discharge + gage_height + water_temp (ML feature set)
+    row["reading_rating_4"] = rating_4  # 0-4: all parameters including precipitation (audit use)
+    row["last_any_reading_at"] = fmt_ts(max(last_reading_times)) if last_reading_times else None
     row["parameter_count"] = len(readings)
 
     return row
@@ -213,7 +234,7 @@ def main():
     parser = argparse.ArgumentParser(description="Audit USGS gauge data availability")
     parser.add_argument("--state", default="08", help="State FIPS code (default: 08 = Colorado)")
     parser.add_argument("--all-types", action="store_true", help="Include all site types (default: streams only)")
-    parser.add_argument("--out", default="gauge_audit", help="Output file path prefix (no extension)")
+    parser.add_argument("--out", default=None, help="Output file path prefix (no extension); defaults to gauge_audit_logs/gauge_audit_YYYYMMDD_HHMMSS")
     parser.add_argument("--max", type=int, default=0, help="Limit to first N gauges (0 = all, for testing)")
     args = parser.parse_args()
 
@@ -222,6 +243,12 @@ def main():
         sys.exit(1)
 
     now = datetime.now(timezone.utc)
+
+    if args.out is None:
+        log_dir = "gauge_audit_logs"
+        os.makedirs(log_dir, exist_ok=True)
+        timestamp = now.strftime("%Y%m%d_%H%M%S")
+        args.out = os.path.join(log_dir, f"gauge_audit_{timestamp}")
 
     locations = fetch_monitoring_locations(args.state, stream_only=not args.all_types)
     if args.max:
@@ -257,13 +284,13 @@ def main():
         json.dump(rows_to_geojson(rows), f, indent=2)
     print(f"GeoJSON written: {geojson_path}")
 
-    # Quick summary
-    active_counts = {0: 0, 1: 0, 2: 0, 3: 0}
+    # Quick summary (reading_rating_4 = all 4 params including precipitation)
+    active_counts = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0}
     for row in rows:
-        active_counts[row["reading_rating"]] += 1
-    print(f"\nRating summary:")
+        active_counts[row["reading_rating_4"]] += 1
+    print(f"\nRating summary (out of 4 params):")
     for score, count in sorted(active_counts.items(), reverse=True):
-        print(f"  {score}/3 — {count} gauges")
+        print(f"  {score}/4 — {count} gauges")
 
 
 if __name__ == "__main__":

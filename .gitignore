@@ -41,3 +41,6 @@ htmlcov/
 
 # Git worktrees
 .worktrees/
+
+# Gauge audit snapshots
+gauge_audit_logs/
