@@ -55,21 +55,48 @@ services:
       postgres:
         condition: service_healthy
 
-  prefect-worker:
+  prefect-server:
+    image: prefecthq/prefect:3-python3.11
+    restart: unless-stopped
+    command: prefect server start --host 0.0.0.0
+    environment:
+      PREFECT_SERVER_API_HOST: 0.0.0.0
+      PREFECT_HOME: /root/.prefect
+    ports:
+      - "4200:4200"
+    volumes:
+      - prefect-data:/root/.prefect
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:4200/api/health').read()"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      default:
+        aliases:
+          - prefect-server
+
+  prefect-serve:
     build:
       context: ./pipeline
       dockerfile: Dockerfile
+    restart: unless-stopped
+    command: python serve.py
     environment:
       DATABASE_URL: postgresql+psycopg2://riffle:riffle@postgres:5432/riffle
       MLFLOW_TRACKING_URI: http://mlflow:5000
-      PREFECT_API_URL: ${PREFECT_API_URL:-}
-      PREFECT_API_KEY: ${PREFECT_API_KEY:-}
+      PREFECT_API_URL: ${PREFECT_API_URL:-http://prefect-server:4200/api}
       USGS_API_KEY: ${USGS_API_KEY:-}
     depends_on:
       postgres:
         condition: service_healthy
-    restart: unless-stopped
+      prefect-server:
+        condition: service_healthy
+      mlflow:
+        condition: service_started
 
 volumes:
   postgres-data:
   mlflow-artifacts:
+  prefect-data:
