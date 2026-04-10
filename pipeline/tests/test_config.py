@@ -19,5 +19,8 @@ def test_active_gauges_only_contains_active():
         assert g["active"] is True
 
 
-def test_initial_11_gauges_all_active():
-    assert len(ACTIVE_GAUGES) == 11
+def test_active_gauges_match_audit():
+    # After the 2026-04-10 audit: 5 stagnant gauges deactivated, 19 new gauges
+    # added, 2 more (Eleven Mile Canyon, Ruedi to Basalt) deactivated in favor
+    # of nearby alternatives. See notebooks/gauge_audit_map.ipynb section 5.
+    assert len(ACTIVE_GAUGES) == 23
