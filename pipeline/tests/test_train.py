@@ -6,7 +6,9 @@ from plugins.ml.train import (
     label_condition,
     generate_labels,
     train_model,
+    train_daily_model,
     CONDITION_CLASSES,
+    DAILY_FEATURE_COLS,
 )
 
 # flow_thresholds for South Platte Spinney
@@ -63,5 +65,35 @@ def test_train_model_returns_booster_and_version():
     import mlflow
     mlflow.set_tracking_uri("sqlite:///test_mlflow.db")
     booster, run_id = train_model(df, experiment_name="test-riffle")
+    assert booster is not None
+    assert isinstance(run_id, str)
+
+
+def test_daily_feature_cols_excludes_hourly_only_features():
+    # Sanity check that the daily feature schema doesn't accidentally pull in
+    # hourly-only features that wouldn't be available at daily granularity.
+    excluded = {"hour_of_day", "gauge_height_ft", "weather_code", "precip_probability"}
+    assert excluded.isdisjoint(set(DAILY_FEATURE_COLS))
+
+
+def test_train_daily_model_returns_booster_and_version():
+    n = 50
+    df = pd.DataFrame({
+        "flow_cfs": [150.0] * n,
+        "water_temp_f": [52.0] * n,
+        "air_temp_f_mean": [55.0] * n,
+        "air_temp_f_min": [40.0] * n,
+        "air_temp_f_max": [70.0] * n,
+        "precip_day_mm": [0.0] * n,
+        "precip_3day_mm": [0.0] * n,
+        "snowfall_mm": [0.0] * n,
+        "wind_speed_mph_max": [12.0] * n,
+        "day_of_year": [90] * n,
+        "days_since_precip_event": [5] * n,
+        "condition": ["Good"] * n,
+    })
+    import mlflow
+    mlflow.set_tracking_uri("sqlite:///test_mlflow.db")
+    booster, run_id = train_daily_model(df, experiment_name="test-riffle-daily")
     assert booster is not None
     assert isinstance(run_id, str)

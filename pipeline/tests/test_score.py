@@ -3,7 +3,7 @@ sys.path.insert(0, "pipeline")
 import pytest
 from unittest.mock import MagicMock, patch
 import numpy as np
-from plugins.ml.score import predict_condition, load_production_model
+from plugins.ml.score import predict_condition, predict_daily_condition, load_production_model
 from plugins.ml.train import CONDITION_CLASSES
 
 
@@ -43,3 +43,21 @@ def test_predict_condition_returns_str_and_float():
     assert isinstance(label, str)
     assert isinstance(confidence, float)
     assert label == "Blown Out"
+
+
+def test_predict_daily_condition_returns_valid_label():
+    mock_booster = MagicMock()
+    probs = np.zeros((1, len(CONDITION_CLASSES)))
+    probs[0][4] = 0.85  # "Excellent"
+    mock_booster.predict.return_value = probs
+
+    features = {
+        "flow_cfs": 150.0, "water_temp_f": 50.0,
+        "air_temp_f_mean": 55.0, "air_temp_f_min": 40.0, "air_temp_f_max": 70.0,
+        "precip_day_mm": 0.0, "precip_3day_mm": 0.0,
+        "snowfall_mm": 0.0, "wind_speed_mph_max": 12.0,
+        "day_of_year": 90, "days_since_precip_event": 5,
+    }
+    label, confidence = predict_daily_condition(mock_booster, features)
+    assert label == "Excellent"
+    assert confidence == pytest.approx(0.85)

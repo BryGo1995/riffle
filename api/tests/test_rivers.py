@@ -20,16 +20,24 @@ MOCK_GAUGES = [
 
 MOCK_PREDICTIONS_TODAY = [
     {
-        "gauge_id": 1, "target_datetime": date(2026, 3, 30), "condition": "Good",
-        "confidence": 0.82, "is_forecast": False, "model_version": "1",
+        "gauge_id": 1, "target_date": date(2026, 3, 30), "condition": "Good",
+        "confidence": 0.82, "is_forecast": False, "model_version": "daily-v1",
     }
 ]
 
 MOCK_FORECAST = [
-    {"gauge_id": 1, "target_datetime": date(2026, 3, 30), "condition": "Good", "confidence": 0.82, "is_forecast": False, "model_version": "1"},
-    {"gauge_id": 1, "target_datetime": date(2026, 3, 31), "condition": "Fair", "confidence": 0.71, "is_forecast": True, "model_version": "1"},
-    {"gauge_id": 1, "target_datetime": date(2026, 3, 31), "condition": "Poor", "confidence": 0.65, "is_forecast": True, "model_version": "1"},
-    {"gauge_id": 1, "target_datetime": date(2026, 4, 1),  "condition": "Good", "confidence": 0.78, "is_forecast": True, "model_version": "1"},
+    {"gauge_id": 1, "target_date": date(2026, 3, 30), "condition": "Good",
+     "confidence": 0.82, "is_forecast": False,
+     "precip_mm_sum": 0.0, "air_temp_f_mean": 55.0,
+     "air_temp_f_min": 40.0, "air_temp_f_max": 65.0},
+    {"gauge_id": 1, "target_date": date(2026, 3, 31), "condition": "Fair",
+     "confidence": 0.71, "is_forecast": True,
+     "precip_mm_sum": 2.5, "air_temp_f_mean": 52.0,
+     "air_temp_f_min": 38.0, "air_temp_f_max": 60.0},
+    {"gauge_id": 1, "target_date": date(2026, 4, 1), "condition": "Good",
+     "confidence": 0.78, "is_forecast": True,
+     "precip_mm_sum": 0.0, "air_temp_f_mean": 58.0,
+     "air_temp_f_min": 42.0, "air_temp_f_max": 68.0},
 ]
 
 def _mock_session(rows):
@@ -72,7 +80,7 @@ def test_get_river_detail_unknown_gauge():
 
 def test_get_history_returns_30_days():
     mock_history = [
-        {"target_datetime": date(2026, 3, 30 - i), "condition": "Good", "confidence": 0.8, "flow_cfs": 150.0, "water_temp_f": 52.0}
+        {"target_date": date(2026, 3, 30 - i), "condition": "Good", "confidence": 0.8, "flow_cfs": 150.0, "water_temp_f": 52.0}
         for i in range(30)
     ]
     with patch("api.routes.rivers.get_session") as mock_gs, \

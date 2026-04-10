@@ -21,6 +21,13 @@ FEATURE_COLS = [
     "precip_probability", "snowfall_mm", "wind_speed_mph",
     "weather_code", "cloud_cover_pct", "surface_pressure_hpa",
 ]
+DAILY_FEATURE_COLS = [
+    "flow_cfs", "water_temp_f",
+    "air_temp_f_mean", "air_temp_f_min", "air_temp_f_max",
+    "precip_day_mm", "precip_3day_mm",
+    "snowfall_mm", "wind_speed_mph_max",
+    "day_of_year", "days_since_precip_event",
+]
 
 
 def label_condition(
@@ -90,6 +97,40 @@ def train_model(
     y = df["condition"].map(LABEL_TO_INT).values
 
     dtrain = xgb.DMatrix(X, label=y, feature_names=FEATURE_COLS)
+
+    params = {
+        "objective": "multi:softprob",
+        "num_class": len(CONDITION_CLASSES),
+        "max_depth": 4,
+        "eta": 0.1,
+        "subsample": 0.8,
+        "eval_metric": "mlogloss",
+        "seed": 42,
+    }
+
+    mlflow.set_experiment(experiment_name)
+    with mlflow.start_run() as run:
+        mlflow.log_params(params)
+        booster = xgb.train(params, dtrain, num_boost_round=50)
+        mlflow.xgboost.log_model(booster, artifact_path="model")
+        run_id = run.info.run_id
+
+    return booster, run_id
+
+
+def train_daily_model(
+    df: pd.DataFrame,
+    experiment_name: str = "riffle-conditions-daily",
+) -> Tuple[xgb.Booster, str]:
+    """Train XGBoost classifier on daily-granularity data, log to MLflow.
+
+    df must have columns: DAILY_FEATURE_COLS + 'condition'.
+    Returns: (trained booster, MLflow run_id).
+    """
+    X = df[DAILY_FEATURE_COLS].values
+    y = df["condition"].map(LABEL_TO_INT).values
+
+    dtrain = xgb.DMatrix(X, label=y, feature_names=DAILY_FEATURE_COLS)
 
     params = {
         "objective": "multi:softprob",
