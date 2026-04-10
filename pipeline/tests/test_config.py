@@ -20,6 +20,7 @@ def test_active_gauges_only_contains_active():
 
 
 def test_active_gauges_match_audit():
-    # 5 of the original 11 gauges had stagnant USGS data and were deactivated
-    # after the 2026-04-10 audit. See notebooks/gauge_audit_map.ipynb section 5.
-    assert len(ACTIVE_GAUGES) == 6
+    # After the 2026-04-10 audit: 5 stagnant gauges deactivated, 19 new gauges
+    # added, 2 more (Eleven Mile Canyon, Ruedi to Basalt) deactivated in favor
+    # of nearby alternatives. See notebooks/gauge_audit_map.ipynb section 5.
+    assert len(ACTIVE_GAUGES) == 23
