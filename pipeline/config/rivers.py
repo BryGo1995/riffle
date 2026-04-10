@@ -19,7 +19,7 @@ GAUGES = [
         "lat": 38.9097,
         "lon": -105.5666,
         "flow_thresholds": {"blowout": 500, "optimal_low": 80, "optimal_high": 250},
-        "active": True,
+        "active": False,
     },
     {
         "usgs_gauge_id": "09036000",
@@ -37,7 +37,7 @@ GAUGES = [
         "lat": 39.2525,
         "lon": -105.2192,
         "flow_thresholds": {"blowout": 800, "optimal_low": 150, "optimal_high": 400},
-        "active": True,
+        "active": False,
     },
     {
         "usgs_gauge_id": "09034500",
@@ -46,7 +46,7 @@ GAUGES = [
         "lat": 39.1886,
         "lon": -105.2511,
         "flow_thresholds": {"blowout": 700, "optimal_low": 100, "optimal_high": 350},
-        "active": True,
+        "active": False,
     },
     {
         "usgs_gauge_id": "07091200",
@@ -64,7 +64,7 @@ GAUGES = [
         "lat": 38.4406,
         "lon": -105.2372,
         "flow_thresholds": {"blowout": 3000, "optimal_low": 300, "optimal_high": 1000},
-        "active": True,
+        "active": False,
     },
     {
         "usgs_gauge_id": "09081600",
@@ -100,7 +100,7 @@ GAUGES = [
         "lat": 40.6883,
         "lon": -105.1561,
         "flow_thresholds": {"blowout": 2000, "optimal_low": 150, "optimal_high": 600},
-        "active": True,
+        "active": False,
     },
     {
         "usgs_gauge_id": "09070000",

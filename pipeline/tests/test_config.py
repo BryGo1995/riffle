@@ -19,5 +19,7 @@ def test_active_gauges_only_contains_active():
         assert g["active"] is True
 
 
-def test_initial_11_gauges_all_active():
-    assert len(ACTIVE_GAUGES) == 11
+def test_active_gauges_match_audit():
+    # 5 of the original 11 gauges had stagnant USGS data and were deactivated
+    # after the 2026-04-10 audit. See notebooks/gauge_audit_map.ipynb section 5.
+    assert len(ACTIVE_GAUGES) == 6
