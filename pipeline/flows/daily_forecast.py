@@ -79,7 +79,7 @@ def ingest_daily_task():
     if total_valid == 0:
         raise RuntimeError(
             f"no gauges received valid flow_cfs for {yesterday} — USGS may not have "
-            f"finalized yesterday's mean yet, triggering retry"
+            "finalized yesterday's mean yet, triggering retry"
         )
 
 

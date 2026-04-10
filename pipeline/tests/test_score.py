@@ -123,12 +123,13 @@ def test_ingest_daily_task_succeeds_when_any_gauge_has_valid_flow(
 ):
     from shared.ingest_daily import IngestResult
     from flows.daily_forecast import ingest_daily_task
+    from config.rivers import ACTIVE_GAUGES
 
     mock_get_id.side_effect = lambda usgs_id: 1
     # Alternate: some valid, some not. Task should NOT raise.
     results = [
         IngestResult(rows_written=1, valid_flow_rows=1 if i % 2 == 0 else 0)
-        for i in range(len(__import__("config.rivers", fromlist=["ACTIVE_GAUGES"]).ACTIVE_GAUGES))
+        for i in range(len(ACTIVE_GAUGES))
     ]
     mock_ingest_gauge.side_effect = results
     mock_ingest_weather.return_value = 1
