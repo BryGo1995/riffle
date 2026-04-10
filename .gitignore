@@ -44,3 +44,7 @@ htmlcov/
 
 # Gauge audit snapshots
 gauge_audit_logs/
+
+# Jupyter
+.ipynb_checkpoints/
+.virtual_documents/
