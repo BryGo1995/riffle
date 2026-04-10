@@ -5,7 +5,7 @@ Uses raw SQL via SQLAlchemy text() for clarity and portability.
 
 import os
 from contextlib import contextmanager
-from datetime import datetime, timedelta, timezone
+from datetime import date as date_type, datetime, timedelta, timezone
 from typing import Generator, List, Optional
 
 from sqlalchemy import create_engine, text
@@ -203,6 +203,170 @@ def get_forecast_weather(gauge_id: int) -> List[dict]:
                   AND observed_at >= DATE_TRUNC('hour', NOW())
                   AND observed_at <= NOW() + INTERVAL '72 hours'
                 ORDER BY observed_at ASC
+            """),
+            {"gauge_id": gauge_id},
+        ).fetchall()
+    return [dict(r._mapping) for r in rows]
+
+
+def upsert_gauge_daily_reading(
+    gauge_id: int,
+    observed_date: date_type,
+    flow_cfs: Optional[float],
+    water_temp_f: Optional[float],
+) -> None:
+    with get_session() as session:
+        session.execute(
+            text("""
+                INSERT INTO gauge_readings_daily (gauge_id, observed_date, flow_cfs, water_temp_f)
+                VALUES (:gauge_id, :observed_date, :flow_cfs, :water_temp_f)
+                ON CONFLICT (gauge_id, observed_date)
+                DO UPDATE SET
+                    flow_cfs = EXCLUDED.flow_cfs,
+                    water_temp_f = EXCLUDED.water_temp_f
+            """),
+            {
+                "gauge_id": gauge_id,
+                "observed_date": observed_date,
+                "flow_cfs": flow_cfs,
+                "water_temp_f": water_temp_f,
+            },
+        )
+
+
+def upsert_weather_daily_reading(
+    gauge_id: int,
+    observed_date: date_type,
+    precip_mm_sum: float,
+    air_temp_f_mean: float,
+    air_temp_f_min: float,
+    air_temp_f_max: float,
+    snowfall_mm_sum: float,
+    wind_speed_mph_max: float,
+    is_forecast: bool,
+) -> None:
+    with get_session() as session:
+        session.execute(
+            text("""
+                INSERT INTO weather_readings_daily (
+                    gauge_id, observed_date, precip_mm_sum,
+                    air_temp_f_mean, air_temp_f_min, air_temp_f_max,
+                    snowfall_mm_sum, wind_speed_mph_max, is_forecast
+                )
+                VALUES (
+                    :gauge_id, :observed_date, :precip_mm_sum,
+                    :air_temp_f_mean, :air_temp_f_min, :air_temp_f_max,
+                    :snowfall_mm_sum, :wind_speed_mph_max, :is_forecast
+                )
+                ON CONFLICT (gauge_id, observed_date)
+                DO UPDATE SET
+                    precip_mm_sum = EXCLUDED.precip_mm_sum,
+                    air_temp_f_mean = EXCLUDED.air_temp_f_mean,
+                    air_temp_f_min = EXCLUDED.air_temp_f_min,
+                    air_temp_f_max = EXCLUDED.air_temp_f_max,
+                    snowfall_mm_sum = EXCLUDED.snowfall_mm_sum,
+                    wind_speed_mph_max = EXCLUDED.wind_speed_mph_max,
+                    is_forecast = EXCLUDED.is_forecast
+            """),
+            {
+                "gauge_id": gauge_id,
+                "observed_date": observed_date,
+                "precip_mm_sum": precip_mm_sum,
+                "air_temp_f_mean": air_temp_f_mean,
+                "air_temp_f_min": air_temp_f_min,
+                "air_temp_f_max": air_temp_f_max,
+                "snowfall_mm_sum": snowfall_mm_sum,
+                "wind_speed_mph_max": wind_speed_mph_max,
+                "is_forecast": is_forecast,
+            },
+        )
+
+
+def upsert_prediction_daily(
+    gauge_id: int,
+    target_date: date_type,
+    condition: str,
+    confidence: float,
+    is_forecast: bool,
+    model_version: str,
+) -> None:
+    with get_session() as session:
+        session.execute(
+            text("""
+                INSERT INTO predictions_daily (gauge_id, target_date, condition, confidence, is_forecast, model_version)
+                VALUES (:gauge_id, :target_date, :condition, :confidence, :is_forecast, :model_version)
+                ON CONFLICT (gauge_id, target_date)
+                DO UPDATE SET
+                    condition = EXCLUDED.condition,
+                    confidence = EXCLUDED.confidence,
+                    is_forecast = EXCLUDED.is_forecast,
+                    model_version = EXCLUDED.model_version,
+                    scored_at = NOW()
+            """),
+            {
+                "gauge_id": gauge_id,
+                "target_date": target_date,
+                "condition": condition,
+                "confidence": confidence,
+                "is_forecast": is_forecast,
+                "model_version": model_version,
+            },
+        )
+
+
+def get_recent_gauge_daily_readings(gauge_id: int, days: int = 730) -> List[dict]:
+    """Returns daily rows for the last `days` days, oldest first.
+
+    Oldest-first order makes downstream rolling computations (3-day precip
+    sum, days-since-precip-event) cheaper.
+    """
+    with get_session() as session:
+        rows = session.execute(
+            text("""
+                SELECT observed_date, flow_cfs, water_temp_f
+                FROM gauge_readings_daily
+                WHERE gauge_id = :gauge_id
+                  AND observed_date >= CURRENT_DATE - (:days * INTERVAL '1 day')
+                ORDER BY observed_date ASC
+            """),
+            {"gauge_id": gauge_id, "days": days},
+        ).fetchall()
+    return [dict(r._mapping) for r in rows]
+
+
+def get_recent_weather_daily_readings(gauge_id: int, days: int = 730) -> List[dict]:
+    """Returns observed-only daily weather rows for the last `days` days, oldest first."""
+    with get_session() as session:
+        rows = session.execute(
+            text("""
+                SELECT observed_date, precip_mm_sum, air_temp_f_mean,
+                       air_temp_f_min, air_temp_f_max, snowfall_mm_sum,
+                       wind_speed_mph_max, is_forecast
+                FROM weather_readings_daily
+                WHERE gauge_id = :gauge_id
+                  AND observed_date >= CURRENT_DATE - (:days * INTERVAL '1 day')
+                  AND is_forecast = FALSE
+                ORDER BY observed_date ASC
+            """),
+            {"gauge_id": gauge_id, "days": days},
+        ).fetchall()
+    return [dict(r._mapping) for r in rows]
+
+
+def get_forecast_weather_daily(gauge_id: int) -> List[dict]:
+    """Returns is_forecast=True daily rows for today and the next 7 days, oldest first."""
+    with get_session() as session:
+        rows = session.execute(
+            text("""
+                SELECT observed_date, precip_mm_sum, air_temp_f_mean,
+                       air_temp_f_min, air_temp_f_max, snowfall_mm_sum,
+                       wind_speed_mph_max, is_forecast
+                FROM weather_readings_daily
+                WHERE gauge_id = :gauge_id
+                  AND observed_date >= CURRENT_DATE
+                  AND observed_date <= CURRENT_DATE + INTERVAL '7 days'
+                  AND is_forecast = TRUE
+                ORDER BY observed_date ASC
             """),
             {"gauge_id": gauge_id},
         ).fetchall()

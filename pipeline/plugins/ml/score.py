@@ -12,7 +12,7 @@ import mlflow.xgboost
 import numpy as np
 import xgboost as xgb
 
-from plugins.ml.train import CONDITION_CLASSES, FEATURE_COLS
+from plugins.ml.train import CONDITION_CLASSES, DAILY_FEATURE_COLS, FEATURE_COLS
 
 
 def load_production_model(model_name: str = "riffle-conditions") -> xgb.Booster:
@@ -61,6 +61,19 @@ def predict_condition(
     row = np.array([[features[col] for col in FEATURE_COLS]], dtype=np.float32)
     dmatrix = xgb.DMatrix(row, feature_names=FEATURE_COLS)
     probs = booster.predict(dmatrix)  # shape: (1, num_classes)
+    class_idx = int(np.argmax(probs[0]))
+    confidence = float(probs[0][class_idx])
+    return CONDITION_CLASSES[class_idx], confidence
+
+
+def predict_daily_condition(
+    booster: xgb.Booster,
+    features: Dict[str, float],
+) -> Tuple[str, float]:
+    """Score a single daily feature vector against the daily model."""
+    row = np.array([[features[col] for col in DAILY_FEATURE_COLS]], dtype=np.float32)
+    dmatrix = xgb.DMatrix(row, feature_names=DAILY_FEATURE_COLS)
+    probs = booster.predict(dmatrix)
     class_idx = int(np.argmax(probs[0]))
     confidence = float(probs[0][class_idx])
     return CONDITION_CLASSES[class_idx], confidence

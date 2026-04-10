@@ -55,3 +55,53 @@ CREATE TABLE IF NOT EXISTS predictions (
 
 CREATE INDEX IF NOT EXISTS idx_predictions_gauge_datetime
     ON predictions(gauge_id, target_datetime DESC);
+
+-- Daily aggregated USGS readings (one row per gauge per UTC date)
+CREATE TABLE IF NOT EXISTS gauge_readings_daily (
+    id            SERIAL PRIMARY KEY,
+    gauge_id      INTEGER REFERENCES gauges(id) ON DELETE CASCADE,
+    observed_date DATE NOT NULL,
+    flow_cfs      DOUBLE PRECISION,
+    water_temp_f  DOUBLE PRECISION,
+    UNIQUE(gauge_id, observed_date)
+);
+
+CREATE INDEX IF NOT EXISTS idx_gauge_readings_daily_gauge_date
+    ON gauge_readings_daily(gauge_id, observed_date DESC);
+
+-- Daily aggregated weather (one row per gauge per local date).
+-- Columns map to Open-Meteo daily archive variables; cloud_cover and
+-- surface_pressure are intentionally omitted (no daily aggregate available)
+-- and wind_speed is the daily max rather than mean for the same reason.
+CREATE TABLE IF NOT EXISTS weather_readings_daily (
+    id                    SERIAL PRIMARY KEY,
+    gauge_id              INTEGER REFERENCES gauges(id) ON DELETE CASCADE,
+    observed_date         DATE NOT NULL,
+    precip_mm_sum         DOUBLE PRECISION,
+    air_temp_f_mean       DOUBLE PRECISION,
+    air_temp_f_min        DOUBLE PRECISION,
+    air_temp_f_max        DOUBLE PRECISION,
+    snowfall_mm_sum       DOUBLE PRECISION,
+    wind_speed_mph_max    DOUBLE PRECISION,
+    is_forecast           BOOLEAN NOT NULL DEFAULT FALSE,
+    UNIQUE(gauge_id, observed_date)
+);
+
+CREATE INDEX IF NOT EXISTS idx_weather_readings_daily_gauge_date
+    ON weather_readings_daily(gauge_id, observed_date DESC);
+
+-- Daily ML predictions (current day + forecast days)
+CREATE TABLE IF NOT EXISTS predictions_daily (
+    id              SERIAL PRIMARY KEY,
+    gauge_id        INTEGER REFERENCES gauges(id) ON DELETE CASCADE,
+    target_date     DATE NOT NULL,
+    condition       VARCHAR(20) NOT NULL,
+    confidence      DOUBLE PRECISION,
+    is_forecast     BOOLEAN NOT NULL DEFAULT FALSE,
+    model_version   VARCHAR(100),
+    scored_at       TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    UNIQUE(gauge_id, target_date)
+);
+
+CREATE INDEX IF NOT EXISTS idx_predictions_daily_gauge_date
+    ON predictions_daily(gauge_id, target_date DESC);

@@ -228,3 +228,131 @@ def test_fetch_gauge_reading_range_fetched_at_is_timezone_aware():
         end_date=date(2024, 3, 31),
     )
     assert results[0].fetched_at.tzinfo is not None
+
+
+# --- Daily collection tests ---
+
+from shared.usgs_client import fetch_gauge_daily_range, USGSDailyReading
+
+USGS_DAILY_URL = "https://api.waterdata.usgs.gov/ogcapi/v0/collections/daily/items"
+
+MOCK_DAILY_RESPONSE = {
+    "type": "FeatureCollection",
+    "features": [
+        # Day 1 — flow mean
+        {
+            "type": "Feature",
+            "properties": {
+                "monitoring_location_id": "USGS-09085000",
+                "parameter_code": "00060",
+                "statistic_id": "00003",
+                "time": "2024-03-30",
+                "value": "454",
+                "unit_of_measure": "ft^3/s",
+            },
+        },
+        # Day 1 — temp mean
+        {
+            "type": "Feature",
+            "properties": {
+                "monitoring_location_id": "USGS-09085000",
+                "parameter_code": "00010",
+                "statistic_id": "00003",
+                "time": "2024-03-30",
+                "value": "12.5",
+                "unit_of_measure": "deg C",
+            },
+        },
+        # Day 1 — temp max (should be filtered out)
+        {
+            "type": "Feature",
+            "properties": {
+                "monitoring_location_id": "USGS-09085000",
+                "parameter_code": "00010",
+                "statistic_id": "00001",
+                "time": "2024-03-30",
+                "value": "16.0",
+                "unit_of_measure": "deg C",
+            },
+        },
+        # Day 2 — flow mean
+        {
+            "type": "Feature",
+            "properties": {
+                "monitoring_location_id": "USGS-09085000",
+                "parameter_code": "00060",
+                "statistic_id": "00003",
+                "time": "2024-03-31",
+                "value": "461",
+                "unit_of_measure": "ft^3/s",
+            },
+        },
+    ],
+    "numberReturned": 4,
+}
+
+
+@rsps.activate
+def test_fetch_gauge_daily_range_returns_one_row_per_date():
+    rsps.add(rsps.GET, USGS_DAILY_URL, json=MOCK_DAILY_RESPONSE, status=200)
+    results = fetch_gauge_daily_range(
+        "09085000",
+        start_date=date(2024, 3, 30),
+        end_date=date(2024, 3, 31),
+    )
+    assert len(results) == 2
+    assert all(isinstance(r, USGSDailyReading) for r in results)
+
+
+@rsps.activate
+def test_fetch_gauge_daily_range_filters_to_mean_statistic():
+    rsps.add(rsps.GET, USGS_DAILY_URL, json=MOCK_DAILY_RESPONSE, status=200)
+    results = fetch_gauge_daily_range(
+        "09085000",
+        start_date=date(2024, 3, 30),
+        end_date=date(2024, 3, 31),
+    )
+    day1 = next(r for r in results if r.observed_date == date(2024, 3, 30))
+    # Should only see the mean (12.5°C → 54.5°F), not the max
+    assert day1.water_temp_f == pytest.approx(54.5)
+
+
+@rsps.activate
+def test_fetch_gauge_daily_range_returns_sorted_by_date():
+    rsps.add(rsps.GET, USGS_DAILY_URL, json=MOCK_DAILY_RESPONSE, status=200)
+    results = fetch_gauge_daily_range(
+        "09085000",
+        start_date=date(2024, 3, 30),
+        end_date=date(2024, 3, 31),
+    )
+    assert results[0].observed_date < results[1].observed_date
+
+
+@rsps.activate
+def test_fetch_gauge_daily_range_handles_missing_temp():
+    response = {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "properties": {
+                    "monitoring_location_id": "USGS-09085000",
+                    "parameter_code": "00060",
+                    "statistic_id": "00003",
+                    "time": "2024-03-30",
+                    "value": "100",
+                    "unit_of_measure": "ft^3/s",
+                },
+            },
+        ],
+        "numberReturned": 1,
+    }
+    rsps.add(rsps.GET, USGS_DAILY_URL, json=response, status=200)
+    results = fetch_gauge_daily_range(
+        "09085000",
+        start_date=date(2024, 3, 30),
+        end_date=date(2024, 3, 30),
+    )
+    assert len(results) == 1
+    assert results[0].water_temp_f is None
+    assert results[0].flow_cfs == 100.0

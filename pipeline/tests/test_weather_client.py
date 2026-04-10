@@ -136,3 +136,78 @@ def test_fetch_historical_raises_on_http_error():
             lat=38.9097, lon=-105.5666,
             start_date=date(2024, 3, 31), end_date=date(2024, 3, 31),
         )
+
+
+# --- Daily archive / forecast tests ---
+
+from shared.weather_client import (
+    fetch_weather_daily_archive,
+    fetch_weather_daily_forecast,
+    WeatherDay,
+)
+
+MOCK_DAILY_ARCHIVE = {
+    "daily": {
+        "time": ["2024-03-30", "2024-03-31"],
+        "precipitation_sum": [0.0, 2.5],
+        "temperature_2m_mean": [45.0, 50.0],
+        "temperature_2m_min": [30.0, 35.0],
+        "temperature_2m_max": [60.0, 65.0],
+        "snowfall_sum": [0.0, 0.0],
+        "wind_speed_10m_max": [12.0, 14.0],
+    }
+}
+
+
+@rsps.activate
+def test_fetch_daily_archive_returns_weather_days():
+    rsps.add(rsps.GET, ARCHIVE_URL, json=MOCK_DAILY_ARCHIVE, status=200)
+    results = fetch_weather_daily_archive(
+        lat=38.9097, lon=-105.5666,
+        start_date=date(2024, 3, 30), end_date=date(2024, 3, 31),
+    )
+    assert len(results) == 2
+    assert all(isinstance(r, WeatherDay) for r in results)
+    assert results[0].observed_date == date(2024, 3, 30)
+
+
+@rsps.activate
+def test_fetch_daily_archive_marks_not_forecast():
+    rsps.add(rsps.GET, ARCHIVE_URL, json=MOCK_DAILY_ARCHIVE, status=200)
+    results = fetch_weather_daily_archive(
+        lat=38.9097, lon=-105.5666,
+        start_date=date(2024, 3, 30), end_date=date(2024, 3, 31),
+    )
+    assert all(r.is_forecast is False for r in results)
+
+
+@rsps.activate
+def test_fetch_daily_archive_parses_temp_min_max_mean():
+    rsps.add(rsps.GET, ARCHIVE_URL, json=MOCK_DAILY_ARCHIVE, status=200)
+    results = fetch_weather_daily_archive(
+        lat=38.9097, lon=-105.5666,
+        start_date=date(2024, 3, 30), end_date=date(2024, 3, 31),
+    )
+    day1 = results[1]
+    assert day1.air_temp_f_mean == 50.0
+    assert day1.air_temp_f_min == 35.0
+    assert day1.air_temp_f_max == 65.0
+    assert day1.precip_mm_sum == 2.5
+    assert day1.wind_speed_mph_max == 14.0
+
+
+@rsps.activate
+def test_fetch_daily_forecast_marks_is_forecast_true():
+    rsps.add(rsps.GET, FORECAST_URL, json=MOCK_DAILY_ARCHIVE, status=200)
+    results = fetch_weather_daily_forecast(lat=38.9097, lon=-105.5666, days=2)
+    assert all(r.is_forecast is True for r in results)
+
+
+@rsps.activate
+def test_fetch_daily_archive_raises_on_http_error():
+    rsps.add(rsps.GET, ARCHIVE_URL, status=500)
+    with pytest.raises(RuntimeError, match="Open-Meteo daily archive"):
+        fetch_weather_daily_archive(
+            lat=38.9097, lon=-105.5666,
+            start_date=date(2024, 3, 30), end_date=date(2024, 3, 31),
+        )
