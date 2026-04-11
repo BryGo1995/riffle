@@ -1,14 +1,12 @@
-"""Daily scoring flow.
+"""Daily forecasting pipeline: ingest yesterday's data, then score today + 7
+forecast days for each active gauge.
 
-Runs once per day. For each active gauge:
-1. Loads daily history for context features (3-day precip rolling sum, etc.)
-2. Pulls a 7-day daily weather forecast from Open-Meteo
-3. Builds a feature vector for today + each of the next 7 days, holding
-   flow_cfs and water_temp_f at their most recently observed values
-4. Scores against the daily model and upserts predictions_daily
+Structure: one flow, two tasks as a DAG. If ingest fails after all retries,
+score is skipped automatically by Prefect's task dependency mechanism — we
+never score stale data.
 
-This is a v1.0 scoring approach: future flow_cfs is held constant from the
-latest observation. A future iteration can layer a flow projection on top.
+The ingest task retries on a 5m / 15m / 30m backoff so the 04:00 MT run has
+roughly 45 minutes of slack for USGS to finalize yesterday's daily-mean row.
 """
 
 from datetime import date, timedelta
@@ -16,7 +14,6 @@ from datetime import date, timedelta
 from prefect import flow, task
 
 from config.rivers import ACTIVE_GAUGES
-from shared.weather_client import fetch_weather_daily_forecast
 from shared.db_client import (
     get_gauge_id,
     get_recent_gauge_daily_readings,
@@ -24,11 +21,66 @@ from shared.db_client import (
     upsert_weather_daily_reading,
     upsert_prediction_daily,
 )
+from shared.ingest_daily import ingest_gauge_daily, ingest_weather_daily
+from shared.weather_client import fetch_weather_daily_forecast
 from plugins.features import build_daily_feature_vector
 from plugins.ml.score import load_production_model, predict_daily_condition
 
+
 DAILY_MODEL_NAME = "riffle-condition-daily"
 FORECAST_DAYS = 7
+
+
+@task(
+    name="ingest-daily",
+    retries=3,
+    retry_delay_seconds=[300, 900, 1800],  # 5m, 15m, 30m
+)
+def ingest_daily_task():
+    """Fetch yesterday's daily gauge + weather data for every active gauge.
+
+    Raises RuntimeError if zero gauges received a valid flow_cfs row — that
+    indicates a real USGS outage worth retrying. Per-gauge missing-flow cases
+    are logged and then handled gracefully by score_daily_task's existing
+    "no recent flow_cfs — skipping" path.
+    """
+    yesterday = date.today() - timedelta(days=1)
+    print(f"Ingesting daily data for {yesterday}")
+
+    total_valid = 0
+    total_gauges = 0
+    for cfg in ACTIVE_GAUGES:
+        name = cfg["name"]
+        usgs_id = cfg["usgs_gauge_id"]
+        gauge_id = get_gauge_id(usgs_id)
+
+        ingest_weather_daily(
+            gauge_id=gauge_id,
+            lat=cfg["lat"],
+            lon=cfg["lon"],
+            start=yesterday,
+            end=yesterday,
+        )
+        result = ingest_gauge_daily(
+            gauge_id=gauge_id,
+            usgs_id=usgs_id,
+            start=yesterday,
+            end=yesterday,
+        )
+        total_gauges += 1
+        if result.valid_flow_rows > 0:
+            total_valid += 1
+            print(f"  {name} ({usgs_id}): {result.valid_flow_rows} valid flow rows")
+        else:
+            print(f"  {name} ({usgs_id}): no valid flow yet")
+
+    print(f"\nIngest complete: {total_valid}/{total_gauges} gauges have valid flow_cfs for {yesterday}")
+
+    if total_valid == 0:
+        raise RuntimeError(
+            f"no gauges received valid flow_cfs for {yesterday} — USGS may not have "
+            "finalized yesterday's mean yet, triggering retry"
+        )
 
 
 def _score_one_gauge(model, gauge_cfg: dict) -> int:
@@ -42,6 +94,8 @@ def _score_one_gauge(model, gauge_cfg: dict) -> int:
         return 0
 
     latest = history[-1]
+    # v1.0 simplification: hold future flow_cfs at the latest observation for
+    # all 7 forecast days. A flow projection model can be layered on later.
     latest_flow = latest["flow_cfs"]
     latest_temp = latest["water_temp_f"]
     if latest_flow is None:
@@ -129,11 +183,15 @@ def _score_all():
     print(f"\nWrote {total} daily predictions across {len(ACTIVE_GAUGES)} gauges")
 
 
-@task(retries=1, retry_delay_seconds=300)
+@task(name="score-daily", retries=1, retry_delay_seconds=300)
 def score_daily_task():
     _score_all()
 
 
-@flow(name="score-daily")
-def score_daily_flow():
+@flow(name="daily-forecast")
+def daily_forecast_flow():
+    # Synchronous calls — if ingest_daily_task raises after all retries,
+    # the exception propagates and score_daily_task never runs. No need
+    # for explicit wait_for.
+    ingest_daily_task()
     score_daily_task()

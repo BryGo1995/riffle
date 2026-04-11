@@ -21,42 +21,8 @@ sys.path.insert(0, "pipeline")
 os.environ.setdefault("DATABASE_URL", "postgresql+psycopg2://riffle:riffle@localhost:5434/riffle")
 
 from config.rivers import ACTIVE_GAUGES
-from shared.weather_client import fetch_weather_daily_archive
-from shared.usgs_client import fetch_gauge_daily_range
-from shared.db_client import (
-    get_gauge_id,
-    upsert_gauge_daily_reading,
-    upsert_weather_daily_reading,
-)
-
-
-def backfill_weather_daily(gauge_id: int, lat: float, lon: float, start: date, end: date) -> int:
-    days = fetch_weather_daily_archive(lat, lon, start, end)
-    for d in days:
-        upsert_weather_daily_reading(
-            gauge_id=gauge_id,
-            observed_date=d.observed_date,
-            precip_mm_sum=d.precip_mm_sum,
-            air_temp_f_mean=d.air_temp_f_mean,
-            air_temp_f_min=d.air_temp_f_min,
-            air_temp_f_max=d.air_temp_f_max,
-            snowfall_mm_sum=d.snowfall_mm_sum,
-            wind_speed_mph_max=d.wind_speed_mph_max,
-            is_forecast=False,
-        )
-    return len(days)
-
-
-def backfill_gauge_daily(gauge_id: int, usgs_id: str, start: date, end: date) -> int:
-    readings = fetch_gauge_daily_range(usgs_id, start, end)
-    for r in readings:
-        upsert_gauge_daily_reading(
-            gauge_id=gauge_id,
-            observed_date=r.observed_date,
-            flow_cfs=r.flow_cfs,
-            water_temp_f=r.water_temp_f,
-        )
-    return len(readings)
+from shared.db_client import get_gauge_id
+from shared.ingest_daily import ingest_gauge_daily, ingest_weather_daily
 
 
 def main():
@@ -80,11 +46,11 @@ def main():
 
         gauge_id = get_gauge_id(usgs_id)
 
-        weather_count = backfill_weather_daily(gauge_id, cfg["lat"], cfg["lon"], start, end)
+        weather_count = ingest_weather_daily(gauge_id, cfg["lat"], cfg["lon"], start, end)
         print(f"  weather: {weather_count} days")
 
-        gauge_count = backfill_gauge_daily(gauge_id, usgs_id, start, end)
-        print(f"  gauge:   {gauge_count} days")
+        gauge_result = ingest_gauge_daily(gauge_id, usgs_id, start, end)
+        print(f"  gauge:   {gauge_result.rows_written} days ({gauge_result.valid_flow_rows} with flow)")
 
         # Small pace between gauges to be polite to USGS — single call so no rate limit pressure
         if i < total_gauges:
