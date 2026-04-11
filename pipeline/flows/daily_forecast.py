@@ -94,6 +94,8 @@ def _score_one_gauge(model, gauge_cfg: dict) -> int:
         return 0
 
     latest = history[-1]
+    # v1.0 simplification: hold future flow_cfs at the latest observation for
+    # all 7 forecast days. A flow projection model can be layered on later.
     latest_flow = latest["flow_cfs"]
     latest_temp = latest["water_temp_f"]
     if latest_flow is None:

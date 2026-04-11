@@ -2,7 +2,8 @@
 
 Uses Prefect 3's `serve()` mode: one long-running process polls the local
 Prefect server for scheduled runs and executes them in-process. Suitable
-for a single always-on dev box; production will migrate to work pools.
+for a single always-on dev box; production will migrate to work pools
+(tracked by issue #5).
 
 Four deployments:
   - daily-forecast: ingest yesterday + score today + 7 days. 04:00 MT daily.
