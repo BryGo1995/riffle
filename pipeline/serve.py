@@ -15,6 +15,7 @@ Timezones use America/Denver so the cron handles MST/MDT automatically.
 """
 
 from prefect import serve
+from prefect.schedules import Cron
 
 from flows.daily_forecast import daily_forecast_flow
 from flows.train_daily import train_daily_flow
@@ -26,22 +27,20 @@ if __name__ == "__main__":
     serve(
         daily_forecast_flow.to_deployment(
             name="daily-forecast",
-            cron="0 4 * * *",
-            timezone="America/Denver",
+            schedule=Cron("0 4 * * *", timezone="America/Denver"),
         ),
         train_daily_flow.to_deployment(
             name="train-daily",
-            cron="0 3 * * 0",
-            timezone="America/Denver",
+            schedule=Cron("0 3 * * 0", timezone="America/Denver"),
         ),
         ingest_score_flow.to_deployment(
             name="ingest-score-hourly",
-            cron="0 * * * *",
+            schedule=Cron("0 * * * *"),
             paused=True,
         ),
         train_flow.to_deployment(
             name="train-hourly",
-            cron="0 9 * * 1",
+            schedule=Cron("0 9 * * 1"),
             paused=True,
         ),
     )
