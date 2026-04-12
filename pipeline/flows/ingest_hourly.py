@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 
 from prefect import flow, task
 
-from config.rivers import ACTIVE_GAUGES
+from config.rivers import GAUGES
 from shared.usgs_client import fetch_gauge_reading
 from shared.weather_client import fetch_weather_forecast
 from shared.db_client import get_gauge_id, upsert_gauge_reading, upsert_weather_reading
@@ -17,9 +17,9 @@ from shared.db_client import get_gauge_id, upsert_gauge_reading, upsert_weather_
 
 @task(retries=2, retry_delay_seconds=60)
 def fetch_gauge_readings():
-    """Fetch latest USGS readings for every active gauge."""
+    """Fetch latest USGS readings for every gauge."""
     fetched_at = datetime.now(tz=timezone.utc)
-    for gauge_cfg in ACTIVE_GAUGES:
+    for gauge_cfg in GAUGES:
         usgs_id = gauge_cfg["usgs_gauge_id"]
         reading = fetch_gauge_reading(usgs_id)
         gauge_id = get_gauge_id(usgs_id)
@@ -34,8 +34,8 @@ def fetch_gauge_readings():
 
 @task(retries=2, retry_delay_seconds=60)
 def fetch_weather_readings():
-    """Fetch hourly weather forecast for every active gauge."""
-    for gauge_cfg in ACTIVE_GAUGES:
+    """Fetch hourly weather forecast for every gauge."""
+    for gauge_cfg in GAUGES:
         hours = fetch_weather_forecast(lat=gauge_cfg["lat"], lon=gauge_cfg["lon"])
         gauge_id = get_gauge_id(gauge_cfg["usgs_gauge_id"])
         for hour in hours:

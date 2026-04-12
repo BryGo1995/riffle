@@ -9,7 +9,7 @@ existing hourly 'riffle-conditions' model.
 import pandas as pd
 from prefect import flow, task
 
-from config.rivers import ACTIVE_GAUGES
+from config.rivers import GAUGES
 from shared.db_client import (
     get_gauge_id,
     get_recent_gauge_daily_readings,
@@ -24,7 +24,7 @@ DAILY_MODEL_NAME = "riffle-condition-daily"
 
 def _train_and_promote_daily():
     records = []
-    for gauge_cfg in ACTIVE_GAUGES:
+    for gauge_cfg in GAUGES:
         gauge_id = get_gauge_id(gauge_cfg["usgs_gauge_id"])
         gauge_rows = get_recent_gauge_daily_readings(gauge_id, days=730)
         weather_rows = get_recent_weather_daily_readings(gauge_id, days=730)

@@ -13,7 +13,7 @@ from datetime import date, timedelta
 
 from prefect import flow, task
 
-from config.rivers import ACTIVE_GAUGES
+from config.rivers import GAUGES
 from shared.db_client import (
     get_gauge_id,
     get_recent_gauge_daily_readings,
@@ -49,7 +49,7 @@ def ingest_daily_task():
 
     total_valid = 0
     total_gauges = 0
-    for cfg in ACTIVE_GAUGES:
+    for cfg in GAUGES:
         name = cfg["name"]
         usgs_id = cfg["usgs_gauge_id"]
         gauge_id = get_gauge_id(usgs_id)
@@ -177,10 +177,10 @@ def _score_one_gauge(model, gauge_cfg: dict) -> int:
 def _score_all():
     model = load_production_model(model_name=DAILY_MODEL_NAME)
     total = 0
-    for cfg in ACTIVE_GAUGES:
+    for cfg in GAUGES:
         print(f"Scoring {cfg['name']} ({cfg['usgs_gauge_id']})")
         total += _score_one_gauge(model, cfg)
-    print(f"\nWrote {total} daily predictions across {len(ACTIVE_GAUGES)} gauges")
+    print(f"\nWrote {total} daily predictions across {len(GAUGES)} gauges")
 
 
 @task(name="score-daily", retries=1, retry_delay_seconds=300)

@@ -75,7 +75,7 @@ def test_ingest_daily_task_fetches_yesterday_for_each_active_gauge(
     from datetime import date, timedelta
     from shared.ingest_daily import IngestResult
     from flows.daily_forecast import ingest_daily_task
-    from config.rivers import ACTIVE_GAUGES
+    from config.rivers import GAUGES
 
     yesterday = date.today() - timedelta(days=1)
     mock_get_id.side_effect = lambda usgs_id: hash(usgs_id) % 10000
@@ -85,13 +85,13 @@ def test_ingest_daily_task_fetches_yesterday_for_each_active_gauge(
     # Prefect tasks can be called directly like plain functions in tests using .fn
     ingest_daily_task.fn()
 
-    assert mock_ingest_gauge.call_count == len(ACTIVE_GAUGES)
+    assert mock_ingest_gauge.call_count == len(GAUGES)
     # Every call must use yesterday as both start and end
     for call in mock_ingest_gauge.call_args_list:
         assert call.kwargs["start"] == yesterday
         assert call.kwargs["end"] == yesterday
     # Same check for weather
-    assert mock_ingest_weather.call_count == len(ACTIVE_GAUGES)
+    assert mock_ingest_weather.call_count == len(GAUGES)
     for call in mock_ingest_weather.call_args_list:
         assert call.kwargs["start"] == yesterday
         assert call.kwargs["end"] == yesterday
@@ -123,13 +123,13 @@ def test_ingest_daily_task_succeeds_when_any_gauge_has_valid_flow(
 ):
     from shared.ingest_daily import IngestResult
     from flows.daily_forecast import ingest_daily_task
-    from config.rivers import ACTIVE_GAUGES
+    from config.rivers import GAUGES
 
     mock_get_id.side_effect = lambda usgs_id: 1
     # Alternate: some valid, some not. Task should NOT raise.
     results = [
         IngestResult(rows_written=1, valid_flow_rows=1 if i % 2 == 0 else 0)
-        for i in range(len(ACTIVE_GAUGES))
+        for i in range(len(GAUGES))
     ]
     mock_ingest_gauge.side_effect = results
     mock_ingest_weather.return_value = 1
