@@ -81,4 +81,4 @@ def test_format_summary_returns_string():
 
     assert isinstance(summary, str)
     assert "accuracy" in summary.lower()
-    assert "weighted_f1" in summary.lower() or "weighted f1" in summary.lower()
+    assert "weighted_f1" in summary.lower()
