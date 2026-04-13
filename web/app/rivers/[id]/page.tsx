@@ -1,10 +1,9 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { fetchRiver, fetchRiverHistory } from "@/config/api";
-import type { RiverDetail, RiverHistory } from "@/config/api";
+import { fetchRiver } from "@/config/api";
+import type { RiverDetail } from "@/config/api";
 import ConditionBadge from "@/components/ConditionBadge";
 import ForecastStrip from "@/components/ForecastStrip";
-import HistoryChart from "@/components/HistoryChart";
 
 export const revalidate = 3600;
 
@@ -13,12 +12,9 @@ interface Props {
 }
 
 export default async function RiverDetailPage({ params }: Props) {
-  let river: RiverDetail, historyData: RiverHistory;
+  let river: RiverDetail;
   try {
-    [river, historyData] = await Promise.all([
-      fetchRiver(params.id),
-      fetchRiverHistory(params.id),
-    ]);
+    river = await fetchRiver(params.id);
   } catch {
     notFound();
   }
@@ -90,13 +86,6 @@ export default async function RiverDetailPage({ params }: Props) {
           <ForecastStrip forecast={river.forecast} />
         </section>
 
-        {/* 30-day history */}
-        <section className="bg-white rounded-xl shadow-sm p-6">
-          <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">
-            30-Day Condition History
-          </h2>
-          <HistoryChart history={historyData.history} />
-        </section>
       </main>
     </div>
   );

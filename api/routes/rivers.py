@@ -1,16 +1,17 @@
 """FastAPI route handlers for river/gauge endpoints.
 
 GET /api/v1/rivers                         — all gauges with today's condition
-GET /api/v1/rivers/{gauge_id}              — current condition + 3-day forecast
-GET /api/v1/rivers/{gauge_id}/history      — last 30 days of conditions + key stats
+GET /api/v1/rivers/{gauge_id}              — current snapshot + 7-day forecast
+GET /api/v1/rivers/{gauge_id}/hourly       — last 7 days of hourly gauge readings
+GET /api/v1/rivers/{gauge_id}/hourly?date= — 24 hours for a specific date
 """
 
 import os
 from contextlib import contextmanager
-from datetime import date
+from datetime import date, timedelta
 from typing import Any, Dict, Generator, List, Optional
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session
 
@@ -69,24 +70,33 @@ def get_gauge_forecast(session: Session, gauge_id_int: int) -> List[dict]:
     return [dict(r) for r in rows]
 
 
-def get_gauge_history(session: Session, gauge_id_int: int) -> List[dict]:
-    """Return last 30 days of daily predictions joined with daily gauge stats."""
-    rows = session.execute(
-        text("""
-            SELECT p.target_date, p.condition, p.confidence,
-                   gd.flow_cfs, gd.water_temp_f
-            FROM predictions_daily p
-            LEFT JOIN gauge_readings_daily gd
-                ON gd.gauge_id = p.gauge_id
-                AND gd.observed_date = p.target_date
-            WHERE p.gauge_id = :gid
-              AND p.target_date >= CURRENT_DATE - 30
-              AND p.is_forecast = FALSE
-            ORDER BY p.target_date DESC
-        """),
-        {"gid": gauge_id_int},
-    ).mappings().fetchall()
+def get_gauge_hourly(session: Session, gauge_id_int: int, day: Optional[date] = None) -> List[dict]:
+    """Return hourly gauge readings — 24h for a specific date, or last 7 days."""
+    if day:
+        rows = session.execute(
+            text("""
+                SELECT fetched_at, flow_cfs, water_temp_f, gauge_height_ft
+                FROM gauge_readings
+                WHERE gauge_id = :gid
+                  AND fetched_at >= :day_start
+                  AND fetched_at < :day_end
+                ORDER BY fetched_at DESC
+            """),
+            {"gid": gauge_id_int, "day_start": day, "day_end": day + timedelta(days=1)},
+        ).mappings().fetchall()
+    else:
+        rows = session.execute(
+            text("""
+                SELECT fetched_at, flow_cfs, water_temp_f, gauge_height_ft
+                FROM gauge_readings
+                WHERE gauge_id = :gid
+                  AND fetched_at >= NOW() - INTERVAL '7 days'
+                ORDER BY fetched_at DESC
+            """),
+            {"gid": gauge_id_int},
+        ).mappings().fetchall()
     return [dict(r) for r in rows]
+
 
 
 @router.get("/rivers")
@@ -162,9 +172,13 @@ def get_river(gauge_id: str) -> Dict[str, Any]:
     }
 
 
-@router.get("/rivers/{gauge_id}/history")
-def get_river_history(gauge_id: str) -> Dict[str, Any]:
-    """Return last 30 days of condition labels + key stats for a gauge."""
+
+@router.get("/rivers/{gauge_id}/hourly")
+def get_river_hourly(
+    gauge_id: str,
+    date: Optional[date] = Query(None, description="YYYY-MM-DD for a 24-hour window"),
+) -> Dict[str, Any]:
+    """Return hourly gauge readings — last 7 days, or 24h for a specific date."""
     with get_session() as session:
         gauge = session.execute(
             text("SELECT id, name, river FROM gauges WHERE usgs_gauge_id = :gid"),
@@ -174,20 +188,19 @@ def get_river_history(gauge_id: str) -> Dict[str, Any]:
         if not gauge:
             raise HTTPException(status_code=404, detail=f"Gauge {gauge_id} not found")
 
-        history = get_gauge_history(session, gauge["id"])
+        readings = get_gauge_hourly(session, gauge["id"], day=date)
 
     return {
         "gauge_id": gauge_id,
         "name": gauge["name"],
         "river": gauge["river"],
-        "history": [
+        "readings": [
             {
-                "date": str(h["target_date"]),
-                "condition": h["condition"],
-                "confidence": h["confidence"],
-                "flow_cfs": h.get("flow_cfs"),
-                "water_temp_f": h.get("water_temp_f"),
+                "timestamp": r["fetched_at"].isoformat(),
+                "flow_cfs": r["flow_cfs"],
+                "water_temp_f": r["water_temp_f"],
+                "gauge_height_ft": r["gauge_height_ft"],
             }
-            for h in history
+            for r in readings
         ],
     }

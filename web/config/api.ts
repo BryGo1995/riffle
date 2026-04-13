@@ -35,20 +35,6 @@ export interface RiverDetail {
   usgs_url: string;
 }
 
-export interface HistoryDay {
-  date: string;
-  condition: string;
-  confidence: number;
-  flow_cfs: number | null;
-  water_temp_f: number | null;
-}
-
-export interface RiverHistory {
-  gauge_id: string;
-  name: string;
-  river: string;
-  history: HistoryDay[];
-}
 
 export async function fetchRivers(): Promise<RiverSummary[]> {
   const res = await fetch(`${BASE_URL}/api/v1/rivers`, { next: { revalidate: 3600 } });
@@ -64,10 +50,3 @@ export async function fetchRiver(gaugeId: string): Promise<RiverDetail> {
   return res.json();
 }
 
-export async function fetchRiverHistory(gaugeId: string): Promise<RiverHistory> {
-  const res = await fetch(`${BASE_URL}/api/v1/rivers/${gaugeId}/history`, {
-    next: { revalidate: 3600 },
-  });
-  if (!res.ok) throw new Error(`Failed to fetch history for ${gaugeId}`);
-  return res.json();
-}
