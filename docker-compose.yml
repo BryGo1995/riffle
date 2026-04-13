@@ -23,9 +23,8 @@ services:
   mlflow:
     image: ghcr.io/mlflow/mlflow:v3.10.1
     restart: unless-stopped
-    # --allowed-hosts restricts which Host headers MLflow accepts, guarding
-    # against DNS rebinding. Listed: compose service name, localhost variants
-    # for host-side access, and the container hostname.
+    # --allowed-hosts '*' disables DNS rebinding protection. Acceptable for
+    # local dev; MUST be tightened before production exposure. See issue #5.
     command: >
       sh -c "pip install psycopg2-binary -q &&
       mlflow server
@@ -34,9 +33,7 @@ services:
       --serve-artifacts
       --host 0.0.0.0
       --port 5000
-      --allowed-hosts mlflow
-      --allowed-hosts localhost
-      --allowed-hosts 127.0.0.1"
+      --allowed-hosts '*'"
     ports:
       - "5000:5000"
     volumes:
