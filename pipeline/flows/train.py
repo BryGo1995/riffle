@@ -1,7 +1,7 @@
 import pandas as pd
 from prefect import flow, task
 
-from config.rivers import GAUGES
+from config.rivers import GAUGES, get_thresholds
 from shared.db_client import get_gauge_id, get_recent_gauge_readings, get_recent_weather_readings
 from plugins.ml.train import label_condition, train_model
 from plugins.ml.score import promote_model_to_production
@@ -20,10 +20,6 @@ def _train_and_promote():
             for r in weather_rows
         }
 
-        thresholds = gauge_cfg["flow_thresholds"]
-        flow_values = [r["flow_cfs"] for r in gauge_rows if r["flow_cfs"]]
-        seasonal_median = float(pd.Series(flow_values).median()) if flow_values else 200.0
-
         for row in gauge_rows:
             if not row["flow_cfs"]:
                 continue
@@ -31,6 +27,9 @@ def _train_and_promote():
             weather = weather_by_hour.get(target_datetime)
             if not weather:
                 continue
+
+            thresholds = get_thresholds(gauge_cfg, target_datetime.month)
+
             features = build_feature_vector(
                 flow_cfs=row["flow_cfs"],
                 gauge_height_ft=row["gauge_height_ft"] or 0.0,
@@ -49,9 +48,11 @@ def _train_and_promote():
             condition = label_condition(
                 flow_cfs=row["flow_cfs"],
                 water_temp_f=row["water_temp_f"] or 55.0,
-                seasonal_median=seasonal_median,
                 thresholds=thresholds,
+                freezes=gauge_cfg.get("freezes", False),
+                month=target_datetime.month,
             )
+            features["observed_at"] = target_datetime
             features["condition"] = condition
             records.append(features)
 
@@ -59,7 +60,7 @@ def _train_and_promote():
         raise ValueError("No training records found — check gauge_readings data")
 
     df = pd.DataFrame(records)
-    _, run_id = train_model(df)
+    _, run_id = train_model(df, holdout_days=60)
     promote_model_to_production(run_id)
 
 

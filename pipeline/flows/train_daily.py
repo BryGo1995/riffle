@@ -9,7 +9,7 @@ existing hourly 'riffle-conditions' model.
 import pandas as pd
 from prefect import flow, task
 
-from config.rivers import GAUGES
+from config.rivers import GAUGES, get_thresholds
 from shared.db_client import (
     get_gauge_id,
     get_recent_gauge_daily_readings,
@@ -31,10 +31,6 @@ def _train_and_promote_daily():
 
         weather_by_date = {r["observed_date"]: r for r in weather_rows}
 
-        thresholds = gauge_cfg["flow_thresholds"]
-        flow_values = [r["flow_cfs"] for r in gauge_rows if r["flow_cfs"]]
-        seasonal_median = float(pd.Series(flow_values).median()) if flow_values else 200.0
-
         for row in gauge_rows:
             if not row["flow_cfs"]:
                 continue
@@ -42,6 +38,8 @@ def _train_and_promote_daily():
             weather = weather_by_date.get(target_date)
             if not weather:
                 continue
+
+            thresholds = get_thresholds(gauge_cfg, target_date.month)
 
             features = build_daily_feature_vector(
                 flow_cfs=row["flow_cfs"],
@@ -58,9 +56,11 @@ def _train_and_promote_daily():
             condition = label_condition(
                 flow_cfs=row["flow_cfs"],
                 water_temp_f=row["water_temp_f"] or 55.0,
-                seasonal_median=seasonal_median,
                 thresholds=thresholds,
+                freezes=gauge_cfg.get("freezes", False),
+                month=target_date.month,
             )
+            features["observed_date"] = target_date
             features["condition"] = condition
             records.append(features)
 
@@ -68,7 +68,7 @@ def _train_and_promote_daily():
         raise ValueError("No daily training records found — check gauge_readings_daily data")
 
     df = pd.DataFrame(records)
-    _, run_id = train_daily_model(df)
+    _, run_id = train_daily_model(df, holdout_days=60)
     promote_model_to_production(run_id, model_name=DAILY_MODEL_NAME)
 
 
