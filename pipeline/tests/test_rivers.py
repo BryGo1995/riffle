@@ -7,14 +7,15 @@ def test_gauges_count():
     assert len(GAUGES) == 23
 
 def test_gauge_has_required_fields():
-    required = {"usgs_gauge_id", "name", "river", "lat", "lon", "flow_thresholds"}
+    required = {"usgs_gauge_id", "name", "river", "lat", "lon", "flow_thresholds", "freezes"}
     for g in GAUGES:
         assert required.issubset(g.keys()), f"Missing fields in gauge: {g}"
 
 def test_flow_thresholds_have_required_keys():
     required = {"blowout", "optimal_low", "optimal_high"}
     for g in GAUGES:
-        assert required.issubset(g["flow_thresholds"].keys()), f"Bad thresholds: {g['name']}"
+        for season, t in g["flow_thresholds"].items():
+            assert required.issubset(t.keys()), f"Bad thresholds: {g['name']} {season}"
 
 def test_gauge_ids_are_unique():
     ids = [g["usgs_gauge_id"] for g in GAUGES]
