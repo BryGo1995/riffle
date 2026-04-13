@@ -77,6 +77,6 @@ def train_and_promote_daily_task():
     _train_and_promote_daily()
 
 
-@flow(name="train-daily")
-def train_daily_flow():
+@flow(name="train-daily-forecast")
+def train_daily_forecast_flow():
     train_and_promote_daily_task()

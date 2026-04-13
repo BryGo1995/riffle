@@ -4,7 +4,7 @@ from config.rivers import GAUGES
 
 
 def test_gauges_count():
-    assert len(GAUGES) == 23
+    assert len(GAUGES) == 22
 
 def test_gauge_has_required_fields():
     required = {"usgs_gauge_id", "name", "river", "lat", "lon", "flow_thresholds", "freezes"}

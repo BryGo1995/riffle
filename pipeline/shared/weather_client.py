@@ -76,6 +76,29 @@ def _parse_hourly(data: dict, has_precip_prob: bool) -> List[WeatherHour]:
     return hours
 
 
+def fetch_weather_current(lat: float, lon: float) -> WeatherHour:
+    """Fetch current-hour observed weather only (single row, is_forecast=False)."""
+    params = {
+        "latitude": lat,
+        "longitude": lon,
+        "hourly": HOURLY_VARS,
+        "forecast_hours": 1,
+        "temperature_unit": "fahrenheit",
+        "wind_speed_unit": "mph",
+        "precipitation_unit": "mm",
+        "timezone": "America/Denver",
+    }
+    resp = requests.get(FORECAST_URL, params=params, timeout=30)
+    if not resp.ok:
+        raise RuntimeError(f"Open-Meteo forecast API returned {resp.status_code}")
+    try:
+        hours = _parse_hourly(resp.json(), has_precip_prob=True)
+        hours[0].is_forecast = False
+        return hours[0]
+    except (KeyError, IndexError) as e:
+        raise RuntimeError(f"Open-Meteo current-hour response error: {e}")
+
+
 def fetch_weather_forecast(lat: float, lon: float) -> List[WeatherHour]:
     """Fetch current hour + 72h forecast. First row is current (is_forecast=False)."""
     params = {

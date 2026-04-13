@@ -7,7 +7,7 @@ for a single always-on dev box; production will migrate to work pools
 
 Five deployments:
   - daily-forecast: ingest yesterday + score today + 7 days. 04:00 MT daily.
-  - train-daily:    retrain riffle-condition-daily. 03:00 MT every Sunday.
+  - train-daily-forecast: retrain riffle-condition-daily. 03:00 MT every Sunday.
   - ingest-hourly:  collect USGS gauge + weather data every hour.
   - ingest-score-hourly: hourly ingest + score for the hourly model (PAUSED,
       deferred to v1.1 per PR #11).
@@ -20,7 +20,7 @@ from prefect import serve
 from prefect.schedules import Cron
 
 from flows.daily_forecast import daily_forecast_flow
-from flows.train_daily import train_daily_flow
+from flows.train_daily_forecast import train_daily_forecast_flow
 from flows.ingest_hourly import ingest_hourly_flow
 from flows.ingest_score import ingest_score_flow
 from flows.train import train_flow
@@ -32,8 +32,8 @@ if __name__ == "__main__":
             name="daily-forecast",
             schedule=Cron("0 4 * * *", timezone="America/Denver"),
         ),
-        train_daily_flow.to_deployment(
-            name="train-daily",
+        train_daily_forecast_flow.to_deployment(
+            name="train-daily-forecast",
             schedule=Cron("0 3 * * 0", timezone="America/Denver"),
         ),
         ingest_hourly_flow.to_deployment(

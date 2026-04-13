@@ -94,7 +94,7 @@ def list_rivers() -> List[Dict[str, Any]]:
     """Return all gauges with today's condition label."""
     with get_session() as session:
         gauges = session.execute(
-            text("SELECT id, usgs_gauge_id, name, river, lat, lon FROM gauges ORDER BY river, name")
+            text("SELECT id, usgs_gauge_id, name, river, lat, lon FROM gauges WHERE visible = TRUE ORDER BY river, name")
         ).mappings().fetchall()
         predictions = get_today_predictions(session)
 

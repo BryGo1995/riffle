@@ -6,7 +6,8 @@ CREATE TABLE IF NOT EXISTS gauges (
     river VARCHAR(100) NOT NULL,
     lat DOUBLE PRECISION NOT NULL,
     lon DOUBLE PRECISION NOT NULL,
-    flow_thresholds JSONB NOT NULL
+    flow_thresholds JSONB NOT NULL,
+    visible BOOLEAN NOT NULL DEFAULT TRUE
 );
 
 -- Raw USGS readings (one row per gauge per fetch)

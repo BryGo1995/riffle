@@ -4,7 +4,7 @@ from config.rivers import GAUGES, get_season, get_thresholds
 
 
 def test_gauges_count():
-    assert len(GAUGES) == 23
+    assert len(GAUGES) == 22
 
 
 def test_no_active_field():

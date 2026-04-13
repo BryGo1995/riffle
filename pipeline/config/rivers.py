@@ -25,7 +25,7 @@ GAUGES = [
         "river": "Arkansas River",
         "lat": 38.5347,
         "lon": -106.0008,
-        "freezes": False,
+        "freezes": True,
         "flow_thresholds": {
             "runoff":   {"blowout": 3055, "optimal_low": 406, "optimal_high": 1295},
             "baseflow": {"blowout": 724,  "optimal_low": 306, "optimal_high": 604},
@@ -76,7 +76,7 @@ GAUGES = [
         "river": "South Platte",
         "lat": 39.1628,
         "lon": -105.3097,
-        "freezes": False,
+        "freezes": True,
         "flow_thresholds": {
             "runoff":   {"blowout": 680, "optimal_low": 123, "optimal_high": 255},
             "baseflow": {"blowout": 272, "optimal_low": 142, "optimal_high": 195},
@@ -222,24 +222,12 @@ GAUGES = [
         },
     },
     {
-        "usgs_gauge_id": "07083710",
-        "name": "Malta",
-        "river": "Arkansas River",
-        "lat": 39.1639,
-        "lon": -106.3200,
-        "freezes": False,
-        "flow_thresholds": {
-            "runoff":   {"blowout": 1273, "optimal_low": 199, "optimal_high": 629},
-            "baseflow": {"blowout": 175,  "optimal_low": 89,  "optimal_high": 148},
-        },
-    },
-    {
         "usgs_gauge_id": "07087050",
         "name": "Granite",
         "river": "Arkansas River",
         "lat": 38.9769,
         "lon": -106.2140,
-        "freezes": False,
+        "freezes": True,
         "flow_thresholds": {
             "runoff":   {"blowout": 2528, "optimal_low": 315, "optimal_high": 1020},
             "baseflow": {"blowout": 584,  "optimal_low": 199, "optimal_high": 440},

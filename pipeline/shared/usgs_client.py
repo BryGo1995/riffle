@@ -117,7 +117,8 @@ def fetch_gauge_reading_range(
         "parameter_code": f"{PARAM_FLOW},{PARAM_TEMP},{PARAM_HEIGHT}",
         "datetime": f"{start_date.isoformat()}/{end_date.isoformat()}",
         "f": "json",
-        "limit": 1000,
+        "skipGeometry": "true",
+        "limit": 50000,
     })
 
     readings_by_time: dict = {}
@@ -126,9 +127,9 @@ def fetch_gauge_reading_range(
     while url is not None:
         for attempt in range(4):
             if url == USGS_RANGE_URL:
-                resp = requests.get(url, params=params, timeout=60)
+                resp = requests.get(url, params=params, timeout=120)
             else:
-                resp = requests.get(url, timeout=60)
+                resp = requests.get(url, timeout=120)
             if resp.status_code == 429:
                 retry_after = int(resp.headers.get("Retry-After", 60 * (2 ** attempt)))
                 print(f"    429 rate limit — waiting {retry_after}s before retry {attempt + 1}/4")
@@ -139,7 +140,7 @@ def fetch_gauge_reading_range(
         if not resp.ok:
             raise RuntimeError(f"USGS API returned {resp.status_code} for gauge {gauge_id}")
 
-        time.sleep(2.0)  # pace every request (including paginated) to avoid rate limiting
+        time.sleep(0.5)
         data = resp.json()
         features = data.get("features", [])
 
@@ -173,6 +174,10 @@ def fetch_gauge_reading_range(
         fetched_at = datetime.fromisoformat(time_str)
         if fetched_at.tzinfo is None:
             fetched_at = fetched_at.replace(tzinfo=timezone.utc)
+
+        # Keep only on-the-hour readings (discard 15/30/45-min intervals)
+        if fetched_at.minute != 0:
+            continue
 
         temp_c = param_vals.get(PARAM_TEMP)
         results.append(USGSReadingTimestamped(
