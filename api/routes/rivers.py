@@ -71,27 +71,32 @@ def get_gauge_forecast(session: Session, gauge_id_int: int) -> List[dict]:
 
 
 def get_gauge_hourly(session: Session, gauge_id_int: int, day: Optional[date] = None) -> List[dict]:
-    """Return hourly gauge readings — 24h for a specific date, or last 7 days."""
+    """Return hourly gauge readings joined with weather — 24h for a specific date, or last 7 days."""
+    base_query = """
+        SELECT gr.fetched_at, gr.flow_cfs, gr.water_temp_f, gr.gauge_height_ft,
+               wr.air_temp_f, wr.precip_mm, wr.wind_speed_mph,
+               wr.weather_code, wr.cloud_cover_pct
+        FROM gauge_readings gr
+        LEFT JOIN weather_readings wr
+            ON wr.gauge_id = gr.gauge_id
+            AND wr.observed_at = DATE_TRUNC('hour', gr.fetched_at)
+            AND wr.is_forecast = FALSE
+        WHERE gr.gauge_id = :gid
+    """
     if day:
         rows = session.execute(
-            text("""
-                SELECT fetched_at, flow_cfs, water_temp_f, gauge_height_ft
-                FROM gauge_readings
-                WHERE gauge_id = :gid
-                  AND fetched_at >= :day_start
-                  AND fetched_at < :day_end
-                ORDER BY fetched_at DESC
+            text(base_query + """
+              AND gr.fetched_at >= :day_start
+              AND gr.fetched_at < :day_end
+            ORDER BY gr.fetched_at DESC
             """),
             {"gid": gauge_id_int, "day_start": day, "day_end": day + timedelta(days=1)},
         ).mappings().fetchall()
     else:
         rows = session.execute(
-            text("""
-                SELECT fetched_at, flow_cfs, water_temp_f, gauge_height_ft
-                FROM gauge_readings
-                WHERE gauge_id = :gid
-                  AND fetched_at >= NOW() - INTERVAL '7 days'
-                ORDER BY fetched_at DESC
+            text(base_query + """
+              AND gr.fetched_at >= NOW() - INTERVAL '7 days'
+            ORDER BY gr.fetched_at DESC
             """),
             {"gid": gauge_id_int},
         ).mappings().fetchall()
@@ -200,6 +205,11 @@ def get_river_hourly(
                 "flow_cfs": r["flow_cfs"],
                 "water_temp_f": r["water_temp_f"],
                 "gauge_height_ft": r["gauge_height_ft"],
+                "air_temp_f": r["air_temp_f"],
+                "precip_mm": r["precip_mm"],
+                "wind_speed_mph": r["wind_speed_mph"],
+                "weather_code": r["weather_code"],
+                "cloud_cover_pct": r["cloud_cover_pct"],
             }
             for r in readings
         ],
