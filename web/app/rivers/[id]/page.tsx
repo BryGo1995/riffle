@@ -38,7 +38,7 @@ export default async function RiverDetailPage({ params }: Props) {
         {/* Current condition */}
         <section className="bg-white rounded-xl shadow-sm p-6">
           <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
-            Today's Conditions
+            Today&apos;s Conditions
           </h2>
           <div className="flex items-center gap-4 mb-4">
             <ConditionBadge condition={today?.condition ?? null} />
@@ -81,7 +81,7 @@ export default async function RiverDetailPage({ params }: Props) {
             3-Day Forecast
           </h2>
           <p className="text-xs text-gray-400 mb-3">
-            Forecast days marked "est." use predicted weather with current flow as a baseline.
+            Forecast days marked &quot;est.&quot; use predicted weather with current flow as a baseline.
           </p>
           <ForecastStrip forecast={river.forecast} />
         </section>
