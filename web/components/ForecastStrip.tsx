@@ -28,9 +28,9 @@ export default function ForecastStrip({ forecast }: ForecastStripProps) {
               Precip: {day.precip_mm.toFixed(1)} mm
             </p>
           )}
-          {day.air_temp_f !== null && (
+          {day.air_temp_f_mean !== null && (
             <p className="text-xs text-gray-600">
-              Air: {Math.round(day.air_temp_f)}°F
+              Air: {Math.round(day.air_temp_f_mean)}°F
             </p>
           )}
         </div>
